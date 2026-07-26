@@ -44,7 +44,10 @@ object AppearanceTokens {
     // remains readable over detailed photographs.
     const val pageSurfaceAlpha = 0.38f
     const val cardSurfaceAlpha = 0.76f
-    const val navigationSurfaceAlpha = 0.84f
+    // Navigation chrome must be opaque. Scrollable page content is laid out
+    // behind collapsing app bars and the bottom navigation surface; allowing
+    // the chrome to be translucent makes two text layers visually overlap.
+    const val navigationSurfaceAlpha = 1f
     const val dialogSurfaceAlpha = 0.98f
 }
 
