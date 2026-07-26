@@ -40,7 +40,10 @@ val LocalSemanticColors = staticCompositionLocalOf {
 
 private val MilkBackground = Color(0xFFFFFFFF)
 private val MilkSurfaceLow = Color(0xFFFFF8F0)
-private val MilkSurface = Color(0xFFF8F2EA)
+// Keep the light-mode page surface pure white. Cards retain their warmer
+// container tones, while every Scaffold/TopAppBar using surfaceContainer
+// now matches the requested #FFFFFF application background.
+private val MilkSurface = Color(0xFFFFFFFF)
 private val MilkSurfaceHigh = Color(0xFFF1EBE3)
 private val MilkSurfaceHighest = Color(0xFFEAE4DC)
 private val MilkSurfaceVariant = Color(0xFFE9E2D9)

@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.3`
-- Compose UI 发布版本：`v4.5.3-compose.3`
+- Compose UI 发布版本：`v4.5.3-compose.5`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -50,10 +50,10 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 构建参数可以覆盖 Application ID 和桌面应用名称。Android Application ID 不接受 `*` 字符，因此请求中的 `com.linux.**compose` 使用规范化后的 `com.linux.compose`。
 
 ```bash
-# SKRoot Bro
+# SKRoot Pro
 ./gradlew clean :app:assembleRelease \
   -PPUBLISH_APPLICATION_ID=com.linux.compose \
-  -PPUBLISH_APP_NAME="SKRoot Bro"
+  -PPUBLISH_APP_NAME="SKRoot Pro"
 
 # 顺丰速运
 ./gradlew clean :app:assembleRelease \
@@ -78,11 +78,11 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-最新公开 Release [v4.5.3-compose.3](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.3-compose.3) 提供三个 APK：
+最新公开 Release [v4.5.3-compose.5](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.3-compose.5) 提供三个 APK：
 
-- [`SKRoot Bro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-Bro-com.linux.compose-v4.5.3-release.apk)
-- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-SF-com.sf.activity-v4.5.3-release.apk)
-- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-Pro-com.linux.permissionmanager-v4.5.3-debug.apk)
+- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.5/SKRoot-Pro-com.linux.compose-v4.5.3-release.apk)
+- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.5/SKRoot-SF-com.sf.activity-v4.5.3-release.apk)
+- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.5/SKRoot-Pro-com.linux.permissionmanager-v4.5.3-debug.apk)
 
 SHA-256：`d44435cb5a2c89688b45cda9cf75c365b18e3c93700ac55cd1e33e32afb495d9`（Bro）、`95865e718256bc40a4ccfcef0fdfd705d724673f86e02543a155550c60dead61`（顺丰）、`66a943d13d8dd0b32c9412e29c412325405c0dfdc285af519c2edd15ae9a29bd`（Debug）。
 
@@ -130,6 +130,6 @@ base64 -w 0 release.p12 > release.p12.base64
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。
 
-### v4.5.3-compose.3 图标更新
+### v4.5.3-compose.5 背景与名称更新
 
-默认启动图标已更新为仓库资源中的新角色图标，包含 legacy 与 Android Adaptive Icon 各密度资源。Adaptive Icon 前景层使用 108dp 画布和 72dp 安全区域，避免圆形或圆角遮罩裁切主体。
+浅色模式下的页面、顶部栏、底部导航和 NavigationRail 背景统一为纯白 `#FFFFFF`；卡片仍保留轻微的层级色，用于区分内容区域。`com.linux.compose` 的应用名称恢复为 `SKRoot Pro`，默认启动图标继续使用上一版本的新角色图标。
