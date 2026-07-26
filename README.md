@@ -24,6 +24,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - 已安装模块、模块市场、更新和下载进度
 - 设置、诊断、日志查看与导出
 - Root Key、Boot / 热启动配置和重启选项
+- 设备内本地定制管理器：自定义包名、名称和图标后直接导出或安装 APK
 - `StateFlow` UI 状态、`SharedFlow` 一次性事件和 Repository 数据层
 - 浅色/深色主题、动态强调色和纯白浅色背景
 
@@ -77,6 +78,12 @@ app/build/outputs/apk/debug/app-debug.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
+
+### 设备内本地定制
+
+在应用的 **设置 → 管理器 → 本地定制管理器** 中，可直接以当前安装的单 APK 为模板，在设备内修改包名、管理器名称与五档密度启动图标。构建过程不连接 GitHub Actions 或其他服务；生成包会删除模板签名，使用设备内首次创建并持久复用的本地身份进行 APK v2/v3 签名，再校验 Manifest、应用名称、签名、图标和三项 ARM64 Native 库。
+
+同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
 最新公开 Release [v4.5.4-compose.4](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.4) 提供三个 APK：
 

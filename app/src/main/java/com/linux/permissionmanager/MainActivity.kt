@@ -1,10 +1,14 @@
 package com.linux.permissionmanager
 
 import android.Manifest
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -51,8 +55,11 @@ import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.GetAppListPermissionHelper
 import com.linux.permissionmanager.utils.UrlIntentUtils
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -99,6 +106,11 @@ private data class NavigationItem(
     val icon: ImageVector,
 )
 
+private data class PendingLocalInstall(
+    val file: File,
+    val packageName: String,
+)
+
 private val navigationItems = listOf(
     NavigationItem("主页", Icons.Filled.Home, Icons.Outlined.Home),
     NavigationItem("授权", Icons.Filled.Shield, Icons.Outlined.Shield),
@@ -120,12 +132,14 @@ private fun SkpApp(
     val superUserViewModel: SuperUserViewModel = viewModel(factory = factory)
     val moduleViewModel: ModuleViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
+    val localCustomizerViewModel: LocalCustomizerViewModel = viewModel(factory = factory)
 
     val mainState by mainViewModel.state.collectAsStateWithLifecycle()
     val homeState by homeViewModel.state.collectAsStateWithLifecycle()
     val superUserState by superUserViewModel.state.collectAsStateWithLifecycle()
     val moduleState by moduleViewModel.state.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
+    val localCustomizerState by localCustomizerViewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
@@ -133,6 +147,57 @@ private fun SkpApp(
     var pendingRunOnce by remember { mutableStateOf(false) }
     var pendingStorageAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var missingAppListPermission by remember { mutableStateOf(!GetAppListPermissionHelper.getPermissions(activity)) }
+    var pendingExport by remember { mutableStateOf<File?>(null) }
+    var pendingInstall by remember { mutableStateOf<PendingLocalInstall?>(null) }
+    val installResultAction = remember(context.packageName) { "${context.packageName}.LOCAL_INSTALL_RESULT" }
+
+    val submitLocalInstall: (PendingLocalInstall) -> Unit = { request ->
+        scope.launch {
+            runCatching {
+                commitLocalInstall(context, request, installResultAction)
+            }.onFailure { error ->
+                pendingInstall = null
+                localCustomizerViewModel.installResult(false, "提交安装失败：${error.message ?: error.javaClass.simpleName}")
+            }
+        }
+    }
+
+    val customizerIconPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) localCustomizerViewModel.setIcon(uri)
+    }
+    val customizerExporter = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/vnd.android.package-archive")
+    ) { uri: Uri? ->
+        val request = pendingExport
+        pendingExport = null
+        if (uri == null || request == null) {
+            if (request != null) scope.launch { snackbarHostState.showSnackbar("已取消导出") }
+        } else {
+            scope.launch {
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(uri, "w")?.use { output ->
+                            request.inputStream().use { input -> input.copyTo(output) }
+                        } ?: error("目标文件不可写")
+                    }
+                }.onSuccess {
+                    snackbarHostState.showSnackbar("APK 已导出")
+                }.onFailure { error ->
+                    localCustomizerViewModel.exportResult(false, "导出失败：${error.message ?: error.javaClass.simpleName}")
+                }
+            }
+        }
+    }
+    val unknownSourceSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val request = pendingInstall
+        if (request == null) return@rememberLauncherForActivityResult
+        if (canRequestPackageInstalls(context)) {
+            submitLocalInstall(request)
+        } else {
+            pendingInstall = null
+            localCustomizerViewModel.installResult(false, "尚未允许此管理器安装未知来源应用")
+        }
+    }
 
     // ACTION_GET_CONTENT also exposes third-party file managers. OpenDocument
     // is tied to document providers and hid common standalone file managers.
@@ -148,6 +213,48 @@ private fun SkpApp(
         if (result.values.all { it }) pendingStorageAction?.invoke()
         else scope.launch { snackbarHostState.showSnackbar("未授予存储访问权限") }
         pendingStorageAction = null
+    }
+
+    DisposableEffect(context, installResultAction) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(receiverContext: Context, intent: Intent) {
+                when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+                    PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                        val confirmation = intent.packageInstallerConfirmationIntent()
+                        if (confirmation == null) {
+                            pendingInstall = null
+                            localCustomizerViewModel.installResult(false, "系统没有返回安装确认界面")
+                        } else {
+                            runCatching {
+                                confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                receiverContext.startActivity(confirmation)
+                            }.onFailure { error ->
+                                pendingInstall = null
+                                localCustomizerViewModel.installResult(false, "打开安装确认失败：${error.message ?: error.javaClass.simpleName}")
+                            }
+                        }
+                    }
+                    PackageInstaller.STATUS_SUCCESS -> {
+                        pendingInstall = null
+                        localCustomizerViewModel.installResult(true, "定制管理器安装完成")
+                    }
+                    else -> {
+                        val detail = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
+                            ?.takeIf(String::isNotBlank)
+                            ?: packageInstallerStatusText(status)
+                        pendingInstall = null
+                        localCustomizerViewModel.installResult(false, "安装失败：$detail")
+                    }
+                }
+            }
+        }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(installResultAction),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
 
     fun withStorageAccess(action: () -> Unit) {
@@ -191,6 +298,32 @@ private fun SkpApp(
                 is UiEffect.PickModule -> {
                     pendingRunOnce = effect.runOnce
                     modulePicker.launch("*/*")
+                }
+                UiEffect.PickCustomizerIcon -> customizerIconPicker.launch(arrayOf("image/*"))
+                is UiEffect.ExportCustomizedApk -> {
+                    pendingExport = effect.file
+                    customizerExporter.launch(effect.suggestedName)
+                }
+                is UiEffect.InstallCustomizedApk -> {
+                    val request = PendingLocalInstall(effect.file, effect.packageName)
+                    pendingInstall = request
+                    if (canRequestPackageInstalls(context)) {
+                        submitLocalInstall(request)
+                    } else {
+                        runCatching {
+                            unknownSourceSettings.launch(
+                                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                            )
+                        }.onFailure { error ->
+                            pendingInstall = null
+                            localCustomizerViewModel.installResult(
+                                false,
+                                "打开未知来源设置失败：${error.message ?: error.javaClass.simpleName}",
+                            )
+                        }
+                    }
                 }
                 UiEffect.ShowRootConfig -> mainViewModel.showRootConfig()
                 UiEffect.RequestStorageAccess -> withStorageAccess {}
@@ -279,6 +412,7 @@ private fun SkpApp(
                         onBackgroundAlphaChange = application.container.appearance::setBackgroundAlpha,
                         onClearBackground = application.container.appearance::clearBackground,
                         onResetAppearance = application.container.appearance::reset,
+                        onOpenLocalCustomizer = localCustomizerViewModel::show,
                     )
                 },
             )
@@ -299,6 +433,18 @@ private fun SkpApp(
                 },
             )
         }
+    }
+
+    if (localCustomizerState.visible) {
+        LocalCustomizerDialog(
+            state = localCustomizerState,
+            onDismiss = localCustomizerViewModel::dismiss,
+            onPackageNameChange = localCustomizerViewModel::setPackageName,
+            onManagerNameChange = localCustomizerViewModel::setManagerName,
+            onPickIcon = localCustomizerViewModel::requestIcon,
+            onBuildAndInstall = localCustomizerViewModel::buildAndInstall,
+            onExport = localCustomizerViewModel::buildAndExport,
+        )
     }
 
     if (mainState.rootConfig.visible) {
@@ -483,4 +629,56 @@ private fun hasStorageAccess(context: Context): Boolean = when {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     else -> true
+}
+
+private fun canRequestPackageInstalls(context: Context): Boolean =
+    context.packageManager.canRequestPackageInstalls()
+
+private suspend fun commitLocalInstall(
+    context: Context,
+    request: PendingLocalInstall,
+    resultAction: String,
+) = withContext(Dispatchers.IO) {
+    require(request.file.isFile) { "待安装 APK 不存在" }
+    val installer = context.packageManager.packageInstaller
+    val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+        setAppPackageName(request.packageName)
+        setSize(request.file.length())
+    }
+    var sessionId = -1
+    try {
+        sessionId = installer.createSession(params)
+        installer.openSession(sessionId).use { session ->
+            session.openWrite("base.apk", 0, request.file.length()).use { output ->
+                request.file.inputStream().use { input -> input.copyTo(output) }
+                session.fsync(output)
+            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+            val resultIntent = Intent(resultAction).setPackage(context.packageName)
+            val pendingResult = PendingIntent.getBroadcast(context, sessionId, resultIntent, flags)
+            session.commit(pendingResult.intentSender)
+        }
+    } catch (error: Throwable) {
+        if (sessionId >= 0) runCatching { installer.abandonSession(sessionId) }
+        throw error
+    }
+}
+
+@Suppress("DEPRECATION")
+private fun Intent.packageInstallerConfirmationIntent(): Intent? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+    } else {
+        getParcelableExtra(Intent.EXTRA_INTENT)
+    }
+
+private fun packageInstallerStatusText(status: Int): String = when (status) {
+    PackageInstaller.STATUS_FAILURE_ABORTED -> "用户取消了安装"
+    PackageInstaller.STATUS_FAILURE_BLOCKED -> "系统阻止了安装"
+    PackageInstaller.STATUS_FAILURE_CONFLICT -> "与已安装应用冲突"
+    PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "APK 与当前设备不兼容"
+    PackageInstaller.STATUS_FAILURE_INVALID -> "APK 无效"
+    PackageInstaller.STATUS_FAILURE_STORAGE -> "存储空间不足"
+    else -> "系统安装器返回状态 $status"
 }

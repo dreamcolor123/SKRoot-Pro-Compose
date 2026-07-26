@@ -68,6 +68,7 @@ fun SettingsScreen(
     onBackgroundAlphaChange: (Float) -> Unit,
     onClearBackground: () -> Unit,
     onResetAppearance: () -> Unit,
+    onOpenLocalCustomizer: () -> Unit,
 ) {
     var basicDialog by remember { mutableStateOf(false) }
     var moduleDialog by remember { mutableStateOf(false) }
@@ -185,6 +186,17 @@ fun SettingsScreen(
                             checked = state.adbForcedDisabled,
                             enabled = state.busyItem == null,
                             onCheckedChange = onAdbChange,
+                        )
+                    }
+                }
+                item {
+                    SegmentedGroup("管理器") {
+                        SegmentedItem(
+                            title = "本地定制管理器",
+                            summary = "在设备内定制包名、名称与应用图标",
+                            icon = Icons.Outlined.Tune,
+                            onClick = onOpenLocalCustomizer,
+                            trailing = { Icon(Icons.Outlined.ChevronRight, null) },
                         )
                     }
                 }

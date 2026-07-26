@@ -746,6 +746,7 @@ class AppViewModelFactory(private val app: PermissionManagerApplication) : ViewM
         modelClass.isAssignableFrom(SuperUserViewModel::class.java) -> SuperUserViewModel(app)
         modelClass.isAssignableFrom(ModuleViewModel::class.java) -> ModuleViewModel(app)
         modelClass.isAssignableFrom(SettingsViewModel::class.java) -> SettingsViewModel(app)
+        modelClass.isAssignableFrom(LocalCustomizerViewModel::class.java) -> LocalCustomizerViewModel(app)
         else -> error("Unknown ViewModel: ${modelClass.name}")
     } as T
 }

@@ -1,6 +1,7 @@
 package com.linux.permissionmanager.data
 
 import android.graphics.drawable.Drawable
+import java.io.File
 
 enum class EnvironmentState {
     CHECKING,
@@ -104,6 +105,9 @@ sealed interface UiEffect {
     data class CopyText(val text: String, val confirmation: String = "已复制") : UiEffect
     data class ShowLog(val title: String, val content: String) : UiEffect
     data class PickModule(val runOnce: Boolean) : UiEffect
+    data object PickCustomizerIcon : UiEffect
+    data class ExportCustomizedApk(val file: File, val suggestedName: String) : UiEffect
+    data class InstallCustomizedApk(val file: File, val packageName: String) : UiEffect
     data object ShowRootConfig : UiEffect
     data object RequestStorageAccess : UiEffect
     data object FinishActivity : UiEffect

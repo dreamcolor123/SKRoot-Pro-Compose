@@ -9,6 +9,7 @@ import com.linux.permissionmanager.BuildConfig
 import com.linux.permissionmanager.bridge.NativeBridge
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.NetUtils
+import com.linux.permissionmanager.customizer.LocalCustomizerRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -364,6 +365,7 @@ class UpdateRepository(
 class AppContainer(context: Context) {
     val settings = SettingsStore()
     val appearance = AppearanceStore(context.applicationContext)
+    val customizer = LocalCustomizerRepository(context.applicationContext)
     val events = UiEventBus()
     val native = SkrootRepository()
     val packages = PackageRepository(context.applicationContext)

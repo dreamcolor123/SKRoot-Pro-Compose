@@ -11,8 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.linux.permissionmanager.BuildConfig
 import com.linux.permissionmanager.data.EnvironmentState
 import com.linux.permissionmanager.ui.HomeUiState
 import com.linux.permissionmanager.ui.components.*
@@ -40,13 +40,18 @@ fun HomeScreen(
     var pendingReboot by remember { mutableStateOf<RebootOption?>(null) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val semantic = LocalSemanticColors.current
+    val context = LocalContext.current
+    val applicationLabel = remember(context.packageName) {
+        runCatching { context.packageManager.getApplicationLabel(context.applicationInfo).toString() }
+            .getOrDefault("SKRoot Pro")
+    }
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
                 title = {
                     Column {
-                        Text(BuildConfig.PUBLISH_APP_NAME)
+                        Text(applicationLabel)
                         Text("环境与系统状态", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
