@@ -23,6 +23,11 @@ public class FileUtils {
         String fileName = getFileNameFromUri(context, uri);
         if (fileName == null || fileName.isEmpty()) {
             fileName = "temp_file_" + System.currentTimeMillis() + ".zip";
+        } else {
+            // Providers may return a display name containing path separators.
+            // Keep the copy inside cacheDir and avoid collisions between picks.
+            fileName = new File(fileName).getName();
+            fileName = System.currentTimeMillis() + "_" + fileName;
         }
         File cacheDir = context.getCacheDir();
         File tempFile = new File(cacheDir, fileName);

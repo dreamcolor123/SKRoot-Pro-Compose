@@ -96,7 +96,9 @@ private fun SkpApp() {
     var pendingStorageAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var missingAppListPermission by remember { mutableStateOf(!GetAppListPermissionHelper.getPermissions(activity)) }
 
-    val modulePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+    // ACTION_GET_CONTENT also exposes third-party file managers. OpenDocument
+    // is tied to document providers and hid common standalone file managers.
+    val modulePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) moduleViewModel.installUri(uri, pendingRunOnce)
     }
     val storageSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -150,7 +152,7 @@ private fun SkpApp() {
                 }
                 is UiEffect.PickModule -> {
                     pendingRunOnce = effect.runOnce
-                    modulePicker.launch(arrayOf("application/zip", "application/octet-stream"))
+                    modulePicker.launch("*/*")
                 }
                 UiEffect.ShowRootConfig -> mainViewModel.showRootConfig()
                 UiEffect.RequestStorageAccess -> withStorageAccess {}

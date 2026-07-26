@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
 import java.io.File
 import java.util.Locale
@@ -144,26 +145,47 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
 
     private fun executeHotload(config: RootConfigUiState) = viewModelScope.launch {
         mutableState.update { it.copy(rootConfig = it.rootConfig.copy(busy = true)) }
-        val channelOk = runCatching { native.testBasics(config.rootKey, "Channel").contains("OK") }.getOrDefault(false)
-        if (channelOk) {
-            oneplusStage1(config.rootKey, true)
+        try {
+            val channelOk = withTimeoutOrNull(15_000) {
+                runCatching { native.testBasics(config.rootKey, "Channel").contains("OK") }
+                    .getOrDefault(false)
+            } ?: false
+            if (channelOk) {
+                withTimeoutOrNull(20_000) { oneplusStage1(config.rootKey, true) }
+                events.emit(UiEffect.Snackbar("热启动环境已就绪"))
+                return@launch
+            }
+
+            events.emit(UiEffect.Snackbar("正在加载热启动补丁…"))
+            val result = withTimeoutOrNull(75_000) {
+                if (config.method.equals("MAGICA", true)) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        "ERROR: MAGICA 模式需要 Android 10 或更高版本"
+                    } else executeMagica(app, config.hotloadCommand)
+                } else {
+                    withContext(Dispatchers.IO) {
+                        ShellUtils.executeScript(app, config.hotloadCommand)
+                    }
+                }
+            } ?: "ERROR: 热启动脚本执行超时（75 秒）"
+
+            val bypass = withTimeoutOrNull(20_000) {
+                oneplusStage1(config.rootKey, false)
+            } ?: "ERROR: 一加/Oppo 拦截配置超时\n"
+            delay(3_000)
+            val ready = withTimeoutOrNull(15_000) {
+                runCatching { native.testBasics(config.rootKey, "Channel").contains("OK") }
+                    .getOrDefault(false)
+            } ?: false
+            if (ready) events.emit(UiEffect.Snackbar("热启动加载完成"))
+            else events.emit(UiEffect.ShowLog("热启动日志", bypass + result))
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            events.emit(UiEffect.ShowLog("热启动日志", "ERROR: ${error.message ?: error.javaClass.simpleName}"))
+        } finally {
             mutableState.update { it.copy(rootConfig = it.rootConfig.copy(busy = false)) }
-            return@launch
         }
-        events.emit(UiEffect.Snackbar("正在加载热启动补丁…"))
-        val result = if (config.method.equals("MAGICA", true)) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                "ERROR: MAGICA 模式需要 Android 10 或更高版本"
-            } else executeMagica(app, config.hotloadCommand)
-        } else {
-            withContext(Dispatchers.IO) { ShellUtils.executeScript(app, config.hotloadCommand) }
-        }
-        val bypass = oneplusStage1(config.rootKey, false)
-        delay(3_000)
-        val ready = runCatching { native.testBasics(config.rootKey, "Channel").contains("OK") }.getOrDefault(false)
-        mutableState.update { it.copy(rootConfig = it.rootConfig.copy(busy = false)) }
-        if (ready) events.emit(UiEffect.Snackbar("热启动加载完成"))
-        else events.emit(UiEffect.ShowLog("热启动日志", bypass + result))
     }
 
     private suspend fun oneplusStage1(key: String, showLog: Boolean): String {

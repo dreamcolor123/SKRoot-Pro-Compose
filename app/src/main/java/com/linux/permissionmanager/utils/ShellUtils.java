@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 public class ShellUtils {
 
@@ -16,7 +17,7 @@ public class ShellUtils {
     }
 
     public static String executeScript(String scriptContent, String scriptPath) {
-        StringBuilder outputBuilder = new StringBuilder();
+        StringBuffer outputBuilder = new StringBuffer();
         Process process = null;
         File scriptFile = null;
 
@@ -48,16 +49,35 @@ public class ShellUtils {
             processBuilder.redirectErrorStream(true);
             process = processBuilder.start();
 
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    outputBuilder.append(line).append("\n");
+            Process runningProcess = process;
+            Thread outputReader = new Thread(() -> {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(runningProcess.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        outputBuilder.append(line).append("\n");
+                    }
+                } catch (Exception e) {
+                    if (runningProcess.isAlive()) {
+                        outputBuilder.append("\n[Output Error: ").append(e.getMessage()).append("]");
+                    }
                 }
-            }
+            }, "SKRoot-Hotload-Output");
+            outputReader.setDaemon(true);
+            outputReader.start();
 
-            int exitCode = process.waitFor();
-            outputBuilder.append("\n[Exit Code: ").append(exitCode).append("]");
+            boolean finished = process.waitFor(70, TimeUnit.SECONDS);
+            if (finished) {
+                outputBuilder.append("\n[Exit Code: ").append(process.exitValue()).append("]");
+            } else {
+                outputBuilder.append("\n[Execution Timeout: 70 seconds]");
+                process.destroy();
+                if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly();
+                try {
+                    process.getInputStream().close();
+                } catch (Exception ignored) {}
+            }
+            outputReader.join(2_000);
         } catch (Exception e) {
             e.printStackTrace();
             outputBuilder.append("\n[Execution Error: ").append(e.getMessage()).append("]");

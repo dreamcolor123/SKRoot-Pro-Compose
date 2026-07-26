@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.text.TextUtils;
@@ -131,6 +132,16 @@ public class MagicaRootHelper {
                 postResultOnce(context, finished, callback, "ERROR: service disconnected");
             }
         };
+
+        // Isolated-service startup or its shell can occasionally stop producing
+        // callbacks. End the binding and release the UI after the same timeout
+        // used by MainViewModel's hotload operation.
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (!finished.get()) {
+                postResultOnce(context, finished, callback, "ERROR: Magica execution timed out after 75 seconds");
+                safeUnbind(context, connection);
+            }
+        }, 75_000L);
 
         try {
             Intent intent = new Intent(context, MagicaService.class);
