@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.linux.permissionmanager.BuildConfig
 import com.linux.permissionmanager.data.EnvironmentState
 import com.linux.permissionmanager.ui.HomeUiState
 import com.linux.permissionmanager.ui.components.*
@@ -44,7 +45,7 @@ fun HomeScreen(
             LargeTopAppBar(
                 title = {
                     Column {
-                        Text("SKRoot Pro")
+                        Text(BuildConfig.PUBLISH_APP_NAME)
                         Text("环境与系统状态", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },

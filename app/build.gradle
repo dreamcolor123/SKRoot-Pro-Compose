@@ -4,6 +4,16 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
+def requestedApplicationId = project.findProperty('PUBLISH_APPLICATION_ID')?.toString()?.trim()
+def requestedAppName = project.findProperty('PUBLISH_APP_NAME')?.toString()?.trim()
+def effectiveApplicationId = requestedApplicationId ?: 'com.linux.permissionmanager'
+def effectiveAppName = requestedAppName ?: 'SKRoot(Pro)'
+def releaseStoreFile = project.findProperty('RELEASE_STORE_FILE')?.toString()
+def releaseStorePassword = project.findProperty('RELEASE_STORE_PASSWORD')?.toString()
+def releaseKeyAlias = project.findProperty('RELEASE_KEY_ALIAS')?.toString()
+def releaseKeyPassword = project.findProperty('RELEASE_KEY_PASSWORD')?.toString()
+def hasPublishedSigning = [releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword].every { it }
+
 android {
     namespace 'com.linux.permissionmanager'
     compileSdk 35
@@ -11,11 +21,13 @@ android {
     ndkVersion '26.3.11579264'
 
     defaultConfig {
-        applicationId 'com.linux.permissionmanager'
+        applicationId effectiveApplicationId
         minSdk 26
         targetSdk 31
         versionCode 1
         versionName '4.5.3'
+        buildConfigField 'String', 'PUBLISH_APP_NAME', "\"${effectiveAppName.replace('\\', '\\\\').replace('"', '\\"')}\""
+        manifestPlaceholders = [appLabel: effectiveAppName]
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
         vectorDrawables.useSupportLibrary = true
@@ -28,10 +40,22 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasPublishedSigning) {
+            publishedRelease {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasPublishedSigning) signingConfig signingConfigs.publishedRelease
         }
     }
 

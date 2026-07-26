@@ -9,8 +9,8 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.3`
-- Compose UI 发布版本：`v4.5.3-compose.1`
-- Application ID：`com.linux.permissionmanager`
+- Compose UI 发布版本：`v4.5.3-compose.2`
+- 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
 - ABI：`arm64-v8a`
@@ -45,6 +45,31 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ./gradlew :app:assembleDebug
 ```
 
+### 品牌 Release 构建
+
+构建参数可以覆盖 Application ID 和桌面应用名称。Android Application ID 不接受 `*` 字符，因此请求中的 `com.linux.**compose` 使用规范化后的 `com.linux.compose`。
+
+```bash
+# SKRoot Bro
+./gradlew clean :app:assembleRelease \
+  -PPUBLISH_APPLICATION_ID=com.linux.compose \
+  -PPUBLISH_APP_NAME="SKRoot Bro"
+
+# 顺丰速运
+./gradlew clean :app:assembleRelease \
+  -PPUBLISH_APPLICATION_ID=com.sf.activity \
+  -PPUBLISH_APP_NAME="顺丰速运"
+```
+
+正式分发时通过以下 Gradle 参数注入签名密钥；密钥文件和密码不应提交到仓库：
+
+```text
+-PRELEASE_STORE_FILE=... \
+-PRELEASE_STORE_PASSWORD=... \
+-PRELEASE_KEY_ALIAS=... \
+-PRELEASE_KEY_PASSWORD=...
+```
+
 Debug APK 输出路径：
 
 ```text
@@ -52,6 +77,11 @@ app/build/outputs/apk/debug/app-debug.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
+
+本次公开 Release 提供两个签名 APK：
+
+- `com.linux.compose` / `SKRoot Bro`
+- `com.sf.activity` / `顺丰速运`
 
 ## 上游项目与致谢
 
