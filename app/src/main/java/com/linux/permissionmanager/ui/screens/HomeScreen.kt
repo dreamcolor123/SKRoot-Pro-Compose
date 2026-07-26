@@ -106,7 +106,7 @@ fun HomeScreen(
                     }
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = AppearanceTokens.cardSurfaceAlpha),
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {

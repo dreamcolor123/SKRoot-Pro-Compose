@@ -30,6 +30,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -448,7 +449,10 @@ private fun AdaptiveMainScreen(
                         }
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
+                // Each page owns its translucent surface. Keeping the outer
+                // scaffold transparent avoids two white layers combining into
+                // an effectively opaque background on phones.
+                containerColor = Color.Transparent,
             ) { outerPadding ->
                 HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), beyondViewportPageCount = 3) { page ->
                     MainPage(page, outerPadding, home, superUser, modules, settings)

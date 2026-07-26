@@ -2,7 +2,6 @@ package com.linux.permissionmanager.ui.screens
 
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -306,9 +305,8 @@ private fun PaletteOption(
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .width(132.dp)
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = Modifier.width(132.dp),
         shape = MaterialTheme.shapes.large,
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = if (selected) 2.dp else 0.dp,

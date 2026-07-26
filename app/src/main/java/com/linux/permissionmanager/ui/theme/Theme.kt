@@ -39,9 +39,12 @@ val LocalSemanticColors = staticCompositionLocalOf {
 }
 
 object AppearanceTokens {
-    const val pageSurfaceAlpha = 0.86f
-    const val cardSurfaceAlpha = 0.88f
-    const val navigationSurfaceAlpha = 0.92f
+    // Page surfaces must remain translucent enough for a user-selected image
+    // to survive compositing. Cards and navigation stay more opaque so text
+    // remains readable over detailed photographs.
+    const val pageSurfaceAlpha = 0.38f
+    const val cardSurfaceAlpha = 0.76f
+    const val navigationSurfaceAlpha = 0.84f
     const val dialogSurfaceAlpha = 0.98f
 }
 
