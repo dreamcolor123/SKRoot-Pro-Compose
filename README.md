@@ -78,11 +78,19 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-最新热启动测试 Release [v4.5.4-compose.4](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.4) 仅提供顺丰版 APK：
+最新公开 Release [v4.5.4-compose.4](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.4) 提供三个 APK：
 
+- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.4/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
 - [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.4/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
+- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.4/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
 
-SHA-256：`cbcd5b4ae1bcb9cbaed978f3b2a1d6455e1e11e4225cf48ea37ac291f01bd58f`。
+SHA-256：
+
+```text
+137ca122f829d979b52ee84c5a4e219c24076679d88011b5b5c63255a34e204e  SKRoot-Pro-com.linux.compose-v4.5.4-release.apk
+cbcd5b4ae1bcb9cbaed978f3b2a1d6455e1e11e4225cf48ea37ac291f01bd58f  SKRoot-SF-com.sf.activity-v4.5.4-release.apk
+aeb8e7066f48a3c03123b56bc858bef4d80b5291cbfa8a9e01681c06e7defcfb  SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk
+```
 
 ## 上游项目与致谢
 
