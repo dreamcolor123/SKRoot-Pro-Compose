@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.4`
-- Compose UI 发布版本：`v4.5.4-compose.2`
+- Compose UI 发布版本：`v4.5.4-compose.3`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -78,13 +78,13 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-最新公开 Release [v4.5.4-compose.2](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.2) 提供三个 APK：
+最新公开 Release [v4.5.4-compose.3](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.3) 提供三个 APK：
 
-- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.2/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
-- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.2/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
-- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.2/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
+- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
+- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
+- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
 
-SHA-256：`fc68b30211111bbd28404f4e7765113c038a80857b836b56fe2383b22b0731cf`（SKRoot Pro）、`7ceedab274c759118c392b0eb9e7ce99f888e583ce38f03eddc4b0c3c03c5a16`（顺丰）、`c33941a026f92f276665781f724b8f60735b1567935363c8d8982bbf3177e383`（Debug）。
+SHA-256 将在 4.5.4 Compose 3 构建完成后更新。
 
 ## 上游项目与致谢
 
@@ -130,6 +130,6 @@ base64 -w 0 release.p12 > release.p12.base64
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。
 
-### v4.5.4-compose.2 文件选择与热启动修复
+### v4.5.4-compose.3 热启动握手时序修复
 
-已同步上游 SKRoot Pro 4.5.4 的 `libkernel_module_kit_static.a` Native 静态库。模块 ZIP 选择改用兼容第三方文件管理器的 `ACTION_GET_CONTENT`；热启动脚本与 Magica 执行增加超时、进程清理和 `finally` 状态复位，避免界面长期停留在“正在加载”。
+已同步上游 SKRoot Pro 4.5.4 的 `libkernel_module_kit_static.a` Native 静态库。根据热启动日志，OPlus 监听器与 1.h 脚本此前为串行执行，双方会错过上传握手；现已改为先启动监听器，再并行执行脚本，并保留超时、进程清理和状态复位。模块 ZIP 选择继续使用兼容第三方文件管理器的 `ACTION_GET_CONTENT`。
