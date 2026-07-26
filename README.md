@@ -78,12 +78,13 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-最新公开 Release 提供两个签名 APK：
+最新公开 Release [v4.5.3-compose.3](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.3-compose.3) 提供三个 APK：
 
-- `com.linux.compose` / `SKRoot Bro`
-- `com.sf.activity` / `顺丰速运`
+- [`SKRoot Bro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-Bro-com.linux.compose-v4.5.3-release.apk)
+- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-SF-com.sf.activity-v4.5.3-release.apk)
+- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.3-compose.3/SKRoot-Pro-com.linux.permissionmanager-v4.5.3-debug.apk)
 
-`v4.5.3-compose.3` 另外包含使用新默认图标构建的 `com.linux.permissionmanager` Debug APK。
+SHA-256：`d44435cb5a2c89688b45cda9cf75c365b18e3c93700ac55cd1e33e32afb495d9`（Bro）、`95865e718256bc40a4ccfcef0fdfd705d724673f86e02543a155550c60dead61`（顺丰）、`66a943d13d8dd0b32c9412e29c412325405c0dfdc285af519c2edd15ae9a29bd`（Debug）。
 
 ## 上游项目与致谢
 
