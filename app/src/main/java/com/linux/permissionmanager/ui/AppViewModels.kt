@@ -444,6 +444,9 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
     private var installedRefreshRequestId = 0L
     @Volatile private var downloadCancelled = false
 
+    private fun sameModuleId(installed: InstalledModule, market: MarketModule): Boolean =
+        installed.id.isNotBlank() && market.id.isNotBlank() && installed.id.equals(market.id, ignoreCase = true)
+
     fun setRootKey(value: String) {
         if (value == key && !mutableState.value.installedLoading) return
         key = value
@@ -468,7 +471,7 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                         installedLoading = false,
                         installed = modules,
                         market = state.market.map { market ->
-                            market.copy(isInstalled = modules.any { installed -> installed.id.equals(market.id, ignoreCase = true) })
+                            market.copy(isInstalled = modules.any { installed -> sameModuleId(installed, market) })
                         },
                     )
                 }
@@ -489,7 +492,7 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                     state.copy(
                         marketLoading = false,
                         market = market.map { item ->
-                            item.copy(isInstalled = state.installed.any { installed -> installed.id.equals(item.id, ignoreCase = true) })
+                            item.copy(isInstalled = state.installed.any { installed -> sameModuleId(installed, item) })
                         },
                     )
                 }
