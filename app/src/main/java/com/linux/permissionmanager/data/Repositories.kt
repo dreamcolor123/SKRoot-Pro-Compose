@@ -138,6 +138,33 @@ object JsonParsers {
         else -> EnvironmentState.UNKNOWN
     }
 
+    fun effectiveEnvironment(
+        raw: String,
+        installedVersion: String,
+        sdkVersion: String,
+        pendingReboot: Boolean = false,
+    ): EnvironmentState {
+        if (pendingReboot) return EnvironmentState.PENDING_REBOOT
+        val base = environment(raw)
+        return if (base != EnvironmentState.NOT_INSTALLED && isVersionOlder(installedVersion, sdkVersion)) {
+            EnvironmentState.OUTDATED
+        } else base
+    }
+
+    fun isVersionOlder(installedVersion: String, sdkVersion: String): Boolean {
+        val installed = parseVersion(installedVersion) ?: return false
+        val sdk = parseVersion(sdkVersion) ?: return false
+        return installed.zip(sdk).firstOrNull { (left, right) -> left != right }
+            ?.let { (left, right) -> left < right }
+            ?: false
+    }
+
+    private fun parseVersion(value: String): List<Int>? {
+        val match = Regex("^\\s*[vV]?(\\d+)\\.(\\d+)\\.(\\d+)(?:[-+].*)?\\s*$").matchEntire(value)
+            ?: return null
+        return match.groupValues.drop(1).mapNotNull(String::toIntOrNull).takeIf { it.size == 3 }
+    }
+
     fun system(raw: String, oplus: Boolean = false): SystemStatus {
         val json = JSONObject(raw)
         return SystemStatus(

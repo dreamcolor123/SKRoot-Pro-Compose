@@ -16,6 +16,25 @@ class JsonParsersTest {
     }
 
     @Test
+    fun environmentDetectsOutdatedCoreAndPendingReboot() {
+        assertTrue(JsonParsers.isVersionOlder("4.5.3", "4.5.4"))
+        assertFalse(JsonParsers.isVersionOlder("4.5.4", "4.5.4"))
+        assertFalse(JsonParsers.isVersionOlder("ERR_MODULE", "4.5.4"))
+        assertEquals(
+            EnvironmentState.OUTDATED,
+            JsonParsers.effectiveEnvironment("Running", "4.5.3", "4.5.4"),
+        )
+        assertEquals(
+            EnvironmentState.PENDING_REBOOT,
+            JsonParsers.effectiveEnvironment("Fault", "4.5.4", "4.5.4", pendingReboot = true),
+        )
+        assertEquals(
+            EnvironmentState.NOT_INSTALLED,
+            JsonParsers.effectiveEnvironment("NotInstalled", "4.5.3", "4.5.4"),
+        )
+    }
+
+    @Test
     fun systemStatusUsesDefaultsForMissingFields() {
         val status = JsonParsers.system("{\"selinux\":1,\"seccomp\":2,\"adb\":true}", true)
         assertEquals(1, status.selinux)

@@ -2,7 +2,15 @@ package com.linux.permissionmanager.data
 
 import android.graphics.drawable.Drawable
 
-enum class EnvironmentState { CHECKING, RUNNING, NOT_INSTALLED, FAULT, UNKNOWN }
+enum class EnvironmentState {
+    CHECKING,
+    RUNNING,
+    OUTDATED,
+    PENDING_REBOOT,
+    NOT_INSTALLED,
+    FAULT,
+    UNKNOWN,
+}
 
 data class SystemStatus(
     val selinux: Int = -1,

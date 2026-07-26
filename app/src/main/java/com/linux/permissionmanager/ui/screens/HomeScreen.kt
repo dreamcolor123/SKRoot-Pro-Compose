@@ -83,6 +83,14 @@ fun HomeScreen(
                             Icons.Outlined.CheckCircle, "正常运行",
                             "SKRoot 环境已就绪",
                         )
+                        EnvironmentState.OUTDATED -> StatusVisual(
+                            Icons.Outlined.Update, "核心版本过低",
+                            "当前核心低于 SDK 版本，请更新环境",
+                        )
+                        EnvironmentState.PENDING_REBOOT -> StatusVisual(
+                            Icons.Outlined.RestartAlt, "等待重启",
+                            "环境更新已写入，重启设备后生效",
+                        )
                         EnvironmentState.NOT_INSTALLED -> StatusVisual(
                             Icons.Outlined.WarningAmber, "环境未安装",
                             "安装后即可管理授权与模块",
@@ -130,13 +138,20 @@ fun HomeScreen(
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Button(
                                     onClick = onInstall,
-                                    enabled = state.busyAction == null,
+                                    enabled = state.busyAction == null && state.environment.state != EnvironmentState.PENDING_REBOOT,
                                     modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
                                 ) {
                                     Icon(Icons.Outlined.SystemUpdateAlt, null, Modifier.size(18.dp))
                                     Spacer(Modifier.width(6.dp))
-                                    Text("安装环境", maxLines = 1)
+                                    Text(
+                                        when (state.environment.state) {
+                                            EnvironmentState.OUTDATED -> "更新环境"
+                                            EnvironmentState.PENDING_REBOOT -> "等待重启"
+                                            else -> "安装环境"
+                                        },
+                                        maxLines = 1,
+                                    )
                                 }
                                 OutlinedButton(
                                     onClick = { uninstallDialog = true },

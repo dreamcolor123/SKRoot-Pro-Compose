@@ -251,9 +251,11 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
     private var key = ""
     private var refreshJob: Job? = null
     private var refreshRequestId = 0L
+    private var pendingEnvironmentReboot = false
 
     fun setRootKey(value: String) {
         if (value == key && !mutableState.value.loading) return
+        if (value != key) pendingEnvironmentReboot = false
         key = value
         refresh()
     }
@@ -271,7 +273,13 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
                 val systemRaw = native.systemStatusJson()
                 val baseSystem = JsonParsers.system(systemRaw)
                 val oplus = if (baseSystem.selinux != 0) native.oneplusNormal(requestKey) else false
-                EnvironmentInfo(JsonParsers.environment(raw), raw, version, sdk, settings.hotload) to
+                EnvironmentInfo(
+                    JsonParsers.effectiveEnvironment(raw, version, sdk, pendingEnvironmentReboot),
+                    raw,
+                    version,
+                    sdk,
+                    settings.hotload,
+                ) to
                     baseSystem.copy(oplusIntercepted = oplus)
             }.onSuccess { (environment, system) ->
                 if (requestId != refreshRequestId || requestKey != key) return@onSuccess
@@ -290,10 +298,22 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
     fun install() = operation("安装环境") {
         val result = native.installEnvironment(key, settings.hotload)
         append(result)
-        if (settings.hotload && result.contains("OK")) {
+        val success = result.contains(Regex("(?i)(?:^|:\\s*)OK(?:\\b|，)"))
+        if (settings.hotload && success) {
             native.runCommand(key, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
         }
-        refresh()
+        if (success && !settings.hotload) {
+            pendingEnvironmentReboot = true
+            mutableState.update { state ->
+                state.copy(
+                    loading = false,
+                    error = null,
+                    environment = state.environment.copy(state = EnvironmentState.PENDING_REBOOT),
+                )
+            }
+        } else {
+            refresh()
+        }
     }
 
     fun uninstall() = operation("卸载环境") {
