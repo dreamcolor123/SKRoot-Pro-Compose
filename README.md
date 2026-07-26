@@ -84,7 +84,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.1/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
 - [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.1/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
 
-SHA-256 将在 4.5.4 构建完成后更新。
+SHA-256：`5dc2857f6a6befe129dfcff6a0db275c26eced54f439d76fd7bdb9f97b758702`（SKRoot Pro）、`943cd28c13037098e5494e8696109a1b0e440aa8427792b9dad183e604c79490`（顺丰）、`57000897b9b72d635fb0170fa81e4b5cff50aa70ea54f95e5f3d3c4df8649d2c`（Debug）。
 
 ## 上游项目与致谢
 
