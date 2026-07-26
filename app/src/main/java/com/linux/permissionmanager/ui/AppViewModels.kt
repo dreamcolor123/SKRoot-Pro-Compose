@@ -31,7 +31,7 @@ import java.util.Locale
 import kotlin.coroutines.resume
 
 data class RootConfigUiState(
-    val visible: Boolean = true,
+    val visible: Boolean = false,
     val rootKey: String = "",
     val hotload: Boolean = false,
     val hotloadCommand: String = "",
@@ -55,7 +55,10 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
         MainUiState(
             activeRootKey = settings.rootKey,
             rootConfig = RootConfigUiState(
-                visible = true,
+                // Existing keys stay silent on startup. The dialog is opened
+                // for an empty key, or later when an operation reports a key
+                // failure through UiEffect.ShowRootConfig.
+                visible = settings.rootKey.isBlank(),
                 rootKey = settings.rootKey,
                 hotload = settings.hotload,
                 hotloadCommand = settings.hotloadCommand,
@@ -187,6 +190,24 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
     }
 }
 
+/** Detect explicit key errors without treating a normal uninstalled state as a bad key. */
+private fun looksLikeRootKeyFailure(message: String?): Boolean {
+    val value = message?.lowercase(Locale.ROOT).orEmpty()
+    if (value.isBlank()) return false
+    return listOf(
+        "invalid root key",
+        "invalid rootkey",
+        "root key invalid",
+        "wrong root key",
+        "bad root key",
+        "rootkey_invalid",
+        "invalid_key",
+        "invalid key",
+        "permission denied",
+        "unauthorized",
+    ).any(value::contains)
+}
+
 data class HomeUiState(
     val loading: Boolean = true,
     val environment: EnvironmentInfo = EnvironmentInfo(),
@@ -230,9 +251,13 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
             }.onSuccess { (environment, system) ->
                 if (requestId != refreshRequestId || requestKey != key) return@onSuccess
                 mutableState.update { it.copy(loading = false, environment = environment, system = system) }
+                if (looksLikeRootKeyFailure(environment.rawState) ||
+                    looksLikeRootKeyFailure(environment.installedVersion)
+                ) events.emit(UiEffect.ShowRootConfig)
             }.onFailure { error ->
                 if (error is CancellationException || requestId != refreshRequestId || requestKey != key) return@onFailure
                 mutableState.update { it.copy(loading = false, error = error.message ?: "状态读取失败") }
+                if (looksLikeRootKeyFailure(error.message)) events.emit(UiEffect.ShowRootConfig)
             }
         }
     }
@@ -251,7 +276,11 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
         refresh()
     }
 
-    fun testRoot() = operation("测试 Root") { append(native.testRoot(key)) }
+    fun testRoot() = operation("测试 Root") {
+        val result = native.testRoot(key)
+        append(result)
+        if (looksLikeRootKeyFailure(result)) events.emit(UiEffect.ShowRootConfig)
+    }
 
     fun runCommand(command: String) {
         val value = command.trim()

@@ -152,6 +152,7 @@ private fun SkpApp() {
                     pendingRunOnce = effect.runOnce
                     modulePicker.launch(arrayOf("application/zip", "application/octet-stream"))
                 }
+                UiEffect.ShowRootConfig -> mainViewModel.showRootConfig()
                 UiEffect.RequestStorageAccess -> withStorageAccess {}
                 UiEffect.FinishActivity -> activity.finish()
             }

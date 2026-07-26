@@ -95,6 +95,7 @@ sealed interface UiEffect {
     data class CopyText(val text: String, val confirmation: String = "已复制") : UiEffect
     data class ShowLog(val title: String, val content: String) : UiEffect
     data class PickModule(val runOnce: Boolean) : UiEffect
+    data object ShowRootConfig : UiEffect
     data object RequestStorageAccess : UiEffect
     data object FinishActivity : UiEffect
 }
