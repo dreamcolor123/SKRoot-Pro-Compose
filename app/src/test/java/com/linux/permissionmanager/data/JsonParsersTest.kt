@@ -82,4 +82,32 @@ class JsonParsersTest {
         )
         assertFalse(app!!.hasNewVersion)
     }
+
+    @Test
+    fun appearanceDefaultsToIndigoWithoutBackground() {
+        val appearance = AppearanceSettings()
+        assertEquals(PaletteId.INDIGO, appearance.palette)
+        assertNull(appearance.backgroundUri)
+        assertFalse(appearance.backgroundEnabled)
+        assertEquals(0.28f, appearance.backgroundAlpha, 0.0001f)
+        assertEquals(5, PaletteId.values().size)
+    }
+
+    @Test
+    fun marketModuleInstallationFlagDefaultsToFalse() {
+        val module = MarketModule(
+            chineseName = "Demo",
+            englishName = "Demo",
+            description = "",
+            version = "1.0",
+            id = "demo",
+            author = "author",
+            updateDate = "",
+            sourceUrl = "",
+            downloadUrl = "https://example.com/demo.zip",
+            chineseAlert = "",
+            englishAlert = "",
+        )
+        assertFalse(module.isInstalled)
+    }
 }

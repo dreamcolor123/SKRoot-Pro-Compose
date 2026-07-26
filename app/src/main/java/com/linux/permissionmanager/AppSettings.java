@@ -9,6 +9,9 @@ import java.util.Set;
 public class AppSettings {
     public static final String KEY_IS_HOTLOAD_MODE = "is_hotload_mode";
     public static final String HOTLOAD_SHELL_PATH = "/sdcard/1.h";
+    public static final String KEY_APPEARANCE_PALETTE = "appearance_palette";
+    public static final String KEY_APPEARANCE_BACKGROUND_URI = "appearance_background_uri";
+    public static final String KEY_APPEARANCE_BACKGROUND_ALPHA = "appearance_background_alpha";
     private static SharedPreferences preferences;
 
     public static void init(Context context) {

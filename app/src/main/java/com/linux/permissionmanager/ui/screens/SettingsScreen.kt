@@ -1,5 +1,8 @@
 package com.linux.permissionmanager.ui.screens
 
+import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -7,10 +10,16 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.linux.permissionmanager.data.AppearanceSettings
+import com.linux.permissionmanager.data.PaletteId
 import com.linux.permissionmanager.ui.SettingsUiState
 import com.linux.permissionmanager.ui.components.*
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 
 private data class Choice(val title: String, val value: String)
 private data class RebootChoice(val title: String, val command: String? = null, val soft: Boolean = false)
@@ -42,6 +51,7 @@ private val rebootChoices = listOf(
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
+    appearance: AppearanceSettings,
     bottomPadding: PaddingValues,
     onRefresh: () -> Unit,
     onBootFailChange: (Boolean) -> Unit,
@@ -54,12 +64,18 @@ fun SettingsScreen(
     onReboot: (String?, Boolean) -> Unit,
     onOpenUrl: (String) -> Unit,
     onShowChangelog: () -> Unit,
+    onPaletteChange: (PaletteId) -> Unit,
+    onPickBackground: () -> Unit,
+    onBackgroundAlphaChange: (Float) -> Unit,
+    onClearBackground: () -> Unit,
+    onResetAppearance: () -> Unit,
 ) {
     var basicDialog by remember { mutableStateOf(false) }
     var moduleDialog by remember { mutableStateOf(false) }
     var rebootDialog by remember { mutableStateOf(false) }
     var pendingReboot by remember { mutableStateOf<RebootChoice?>(null) }
     var clearLogDialog by remember { mutableStateOf(false) }
+    var resetAppearanceDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -74,12 +90,12 @@ fun SettingsScreen(
                 actions = { IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, "刷新") } },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
                 ),
             )
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -89,6 +105,70 @@ fun SettingsScreen(
             if (state.loading) item { LoadingState("正在读取设置…") }
             state.error?.let { item { ErrorState(it, onRefresh) } }
             if (!state.loading) {
+                item {
+                    SegmentedGroup("外观") {
+                        Text(
+                            "主题配色",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            PaletteId.values().forEach { palette ->
+                                PaletteOption(
+                                    palette = palette,
+                                    selected = appearance.palette == palette,
+                                    onClick = { onPaletteChange(palette) },
+                                )
+                            }
+                        }
+                        SegmentedItem(
+                            title = "背景图片",
+                            summary = appearance.backgroundUri?.let { backgroundName(it) } ?: "使用纯色背景",
+                            icon = Icons.Outlined.Image,
+                            onClick = onPickBackground,
+                            trailing = { Icon(Icons.Outlined.ChevronRight, null) },
+                        )
+                        if (appearance.backgroundEnabled) {
+                            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("背景透明度", style = MaterialTheme.typography.bodyMedium)
+                                    Text("${(appearance.backgroundAlpha * 100).toInt()}%", color = MaterialTheme.colorScheme.primary)
+                                }
+                                Slider(
+                                    value = appearance.backgroundAlpha,
+                                    onValueChange = onBackgroundAlphaChange,
+                                    valueRange = 0f..0.6f,
+                                    steps = 11,
+                                )
+                                Text(
+                                    "透明度越高，图片越明显；页面会保留浅色遮罩以保证可读性。",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            SegmentedItem(
+                                title = "清除背景图片",
+                                summary = "恢复纯色背景",
+                                icon = Icons.Outlined.ImageNotSupported,
+                                onClick = onClearBackground,
+                                trailing = { Icon(Icons.Outlined.ChevronRight, null) },
+                            )
+                        }
+                        SegmentedItem(
+                            title = "恢复默认外观",
+                            summary = "靛蓝紫、纯白背景、关闭自定义图片",
+                            icon = Icons.Outlined.Restore,
+                            onClick = { resetAppearanceDialog = true },
+                            trailing = { Icon(Icons.Outlined.ChevronRight, null) },
+                        )
+                    }
+                }
                 item {
                     SegmentedGroup("环境保护") {
                         SegmentedSwitchItem(
@@ -205,6 +285,49 @@ fun SettingsScreen(
             dismissButton = { TextButton(onClick = { clearLogDialog = false }) { Text("取消") } },
         )
     }
+    if (resetAppearanceDialog) {
+        AlertDialog(
+            onDismissRequest = { resetAppearanceDialog = false },
+            icon = { Icon(Icons.Outlined.Restore, null) },
+            title = { Text("恢复默认外观？") },
+            text = { Text("将清除主题选择和背景图片，不影响 Root Key、授权及模块数据。") },
+            confirmButton = {
+                Button(onClick = { resetAppearanceDialog = false; onResetAppearance() }) { Text("恢复") }
+            },
+            dismissButton = { TextButton(onClick = { resetAppearanceDialog = false }) { Text("取消") } },
+        )
+    }
+}
+
+@Composable
+private fun PaletteOption(
+    palette: PaletteId,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .width(132.dp)
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.large,
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = if (selected) 2.dp else 0.dp,
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(28.dp).background(Color(palette.previewPrimary)))
+                Box(Modifier.size(28.dp).background(Color(palette.previewContainer)))
+            }
+            Text(palette.title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+            Text(palette.summary, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            if (selected) Text("已选择", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+private fun backgroundName(value: String): String {
+    val path = runCatching { Uri.parse(value).lastPathSegment }.getOrNull().orEmpty()
+    return if (path.isBlank()) "已选择背景图片" else "已选择：${Uri.decode(path).takeLast(48)}"
 }
 
 @Composable

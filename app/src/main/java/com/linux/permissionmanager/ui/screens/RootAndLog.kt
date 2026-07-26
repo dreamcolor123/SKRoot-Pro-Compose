@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.linux.permissionmanager.ui.RootConfigUiState
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 
 data class RebootOption(
     val title: String,
@@ -174,7 +175,7 @@ fun LogScreen(
                 },
             )
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { padding ->
         Surface(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),

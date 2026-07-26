@@ -463,7 +463,15 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
             runCatching { repository.installed(requestKey).map { it.copy(update = repository.cachedUpdate(it)) } }
             .onSuccess { modules ->
                 if (requestId != installedRefreshRequestId || requestKey != key) return@onSuccess
-                mutableState.update { it.copy(installedLoading = false, installed = modules) }
+                mutableState.update { state ->
+                    state.copy(
+                        installedLoading = false,
+                        installed = modules,
+                        market = state.market.map { market ->
+                            market.copy(isInstalled = modules.any { installed -> installed.id.equals(market.id, ignoreCase = true) })
+                        },
+                    )
+                }
                 modules.filter { it.updateJson.isNotBlank() }.forEach { checkUpdate(it, silent = true) }
             }
             .onFailure { error ->
@@ -476,7 +484,16 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
     fun refreshMarket() = viewModelScope.launch {
         mutableState.update { it.copy(marketLoading = true, marketError = null) }
         runCatching { repository.market() }
-            .onSuccess { mutableState.update { state -> state.copy(marketLoading = false, market = it) } }
+            .onSuccess { market ->
+                mutableState.update { state ->
+                    state.copy(
+                        marketLoading = false,
+                        market = market.map { item ->
+                            item.copy(isInstalled = state.installed.any { installed -> installed.id.equals(item.id, ignoreCase = true) })
+                        },
+                    )
+                }
+            }
             .onFailure { mutableState.update { state -> state.copy(marketLoading = false, marketError = it.message ?: "模块市场加载失败") } }
     }
 

@@ -21,6 +21,7 @@ import com.linux.permissionmanager.data.ModuleRunState
 import com.linux.permissionmanager.ui.ModuleUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.LocalSemanticColors
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 
 private val ModuleActionIconSize = 18.dp
 private val ModuleMenuIconSize = 20.dp
@@ -90,11 +91,11 @@ fun ModuleScreen(
                     },
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
                     ),
                 )
-                PrimaryTabRow(selectedTabIndex = state.selectedTab, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                PrimaryTabRow(selectedTabIndex = state.selectedTab, containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha)) {
                     Tab(
                         selected = state.selectedTab == 0,
                         onClick = { onSelectTab(0) },
@@ -110,7 +111,7 @@ fun ModuleScreen(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { innerPadding ->
         if (state.selectedTab == 0) {
             InstalledModules(
@@ -300,7 +301,9 @@ private fun MarketModules(
                     Text(module.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 4, overflow = TextOverflow.Ellipsis)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         if (module.sourceUrl.isNotBlank()) TextButton(onClick = { onOpenUrl(module.sourceUrl) }) { Text("源代码") }
-                        Button(onClick = { onDownload(module) }) {
+                        if (module.isInstalled) {
+                            StatusTag("已安装", LocalSemanticColors.current.successContainer, LocalSemanticColors.current.onSuccessContainer)
+                        } else Button(onClick = { onDownload(module) }) {
                             Icon(Icons.Outlined.Download, null, Modifier.size(ModuleActionIconSize))
                             Spacer(Modifier.width(6.dp))
                             Text("安装")

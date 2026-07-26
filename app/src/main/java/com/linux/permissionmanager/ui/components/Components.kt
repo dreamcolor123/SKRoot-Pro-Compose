@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.linux.permissionmanager.utils.FileUtils
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 
 @Composable
 fun TonalCard(
@@ -33,11 +34,11 @@ fun TonalCard(
 ) {
     val shape = MaterialTheme.shapes.extraLarge
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color)) {
+        Card(onClick = onClick, modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color.copy(alpha = AppearanceTokens.cardSurfaceAlpha))) {
             Column(content = content)
         }
     } else {
-        Card(modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color)) {
+        Card(modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color.copy(alpha = AppearanceTokens.cardSurfaceAlpha))) {
             Column(content = content)
         }
     }
@@ -97,7 +98,7 @@ fun SegmentedItem(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = AppearanceTokens.cardSurfaceAlpha),
         contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f),
         shape = MaterialTheme.shapes.large,
     ) {

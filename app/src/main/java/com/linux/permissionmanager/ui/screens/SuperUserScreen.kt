@@ -18,6 +18,7 @@ import com.linux.permissionmanager.data.InstalledApp
 import com.linux.permissionmanager.data.SuGrant
 import com.linux.permissionmanager.ui.SuperUserUiState
 import com.linux.permissionmanager.ui.components.*
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,12 +77,12 @@ fun SuperUserScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
                 ),
             )
         },
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),

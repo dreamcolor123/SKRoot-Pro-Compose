@@ -66,6 +66,7 @@ data class MarketModule(
     val downloadUrl: String,
     val chineseAlert: String,
     val englishAlert: String,
+    val isInstalled: Boolean = false,
 ) {
     val displayName: String get() = chineseName.ifBlank { englishName.ifBlank { id } }
 }

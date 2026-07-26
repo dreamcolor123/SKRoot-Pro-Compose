@@ -336,6 +336,7 @@ class UpdateRepository(
 
 class AppContainer(context: Context) {
     val settings = SettingsStore()
+    val appearance = AppearanceStore(context.applicationContext)
     val events = UiEventBus()
     val native = SkrootRepository()
     val packages = PackageRepository(context.applicationContext)

@@ -2,19 +2,19 @@ package com.linux.permissionmanager.ui.theme
 
 import android.app.Activity
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
+import com.linux.permissionmanager.data.AppearanceSettings
+import com.linux.permissionmanager.data.PaletteId
 
 data class SemanticColors(
     val success: Color,
@@ -38,35 +38,45 @@ val LocalSemanticColors = staticCompositionLocalOf {
     )
 }
 
-private val MilkBackground = Color(0xFFFFFFFF)
-// Light surfaces stay in the same neutral white family as the page background;
-// the previous cream tokens made cards and controls look yellow against #FFFFFF.
-private val MilkSurfaceLow = Color(0xFFFAFAFA)
-// Keep the light-mode page surface pure white. Cards retain their warmer
-// container tones, while every Scaffold/TopAppBar using surfaceContainer
-// now matches the requested #FFFFFF application background.
-private val MilkSurface = Color(0xFFFFFFFF)
-// Dialogs and prominent status containers should sit on the same pure-white
-// base as the page instead of the former cream surface.
-private val MilkSurfaceHigh = Color(0xFFFFFFFF)
-private val MilkSurfaceHighest = Color(0xFFF0F0F0)
-private val MilkSurfaceVariant = Color(0xFFE6E6E6)
+object AppearanceTokens {
+    const val pageSurfaceAlpha = 0.86f
+    const val cardSurfaceAlpha = 0.88f
+    const val navigationSurfaceAlpha = 0.92f
+    const val dialogSurfaceAlpha = 0.98f
+}
 
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF6750A4),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFEADDFF),
-    onPrimaryContainer = Color(0xFF21005D),
-    secondary = Color(0xFF625B71),
-    secondaryContainer = Color(0xFFE8DEF8),
-    onSecondaryContainer = Color(0xFF1D192B),
-    tertiary = Color(0xFF7D5260),
-    background = MilkBackground,
-    surface = MilkBackground,
-    surfaceVariant = MilkSurfaceVariant,
-    surfaceContainer = MilkSurface,
-    surfaceContainerLow = MilkSurfaceLow,
-    surfaceContainerHigh = MilkSurfaceHigh,
+private val LightBackground = Color.White
+private val LightSurfaceLow = Color(0xFFFAFAFA)
+private val LightSurface = Color.White
+private val LightSurfaceHigh = Color(0xFFFFFFFF)
+private val LightSurfaceHighest = Color(0xFFF0F0F0)
+private val LightSurfaceVariant = Color(0xFFE6E6E6)
+
+private fun baseLight(
+    primary: Color,
+    onPrimary: Color,
+    primaryContainer: Color,
+    onPrimaryContainer: Color,
+    secondary: Color,
+    secondaryContainer: Color,
+    onSecondaryContainer: Color,
+    tertiary: Color,
+): ColorScheme = lightColorScheme(
+    primary = primary,
+    onPrimary = onPrimary,
+    primaryContainer = primaryContainer,
+    onPrimaryContainer = onPrimaryContainer,
+    secondary = secondary,
+    secondaryContainer = secondaryContainer,
+    onSecondaryContainer = onSecondaryContainer,
+    tertiary = tertiary,
+    background = LightBackground,
+    surface = LightBackground,
+    surfaceVariant = LightSurfaceVariant,
+    surfaceContainer = LightSurface,
+    surfaceContainerLow = LightSurfaceLow,
+    surfaceContainerHigh = LightSurfaceHigh,
+    surfaceContainerHighest = LightSurfaceHighest,
     onSurface = Color(0xFF1D1B20),
     onSurfaceVariant = Color(0xFF49454F),
     outline = Color(0xFF79747E),
@@ -76,42 +86,28 @@ private val LightColors = lightColorScheme(
     onErrorContainer = Color(0xFF410002),
 )
 
-private fun ColorScheme.withMilkSurfaces(): ColorScheme = copy(
-    background = MilkBackground,
-    surface = MilkBackground,
-    surfaceVariant = MilkSurfaceVariant,
-    surfaceDim = MilkSurfaceHighest,
-    surfaceBright = MilkBackground,
-    surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = MilkSurfaceLow,
-    surfaceContainer = MilkSurface,
-    surfaceContainerHigh = MilkSurfaceHigh,
-    surfaceContainerHighest = MilkSurfaceHighest,
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFD0BCFF),
-    onPrimary = Color(0xFF381E72),
-    primaryContainer = Color(0xFF4F378B),
-    onPrimaryContainer = Color(0xFFEADDFF),
-    secondary = Color(0xFFCCC2DC),
-    secondaryContainer = Color(0xFF4A4458),
-    onSecondaryContainer = Color(0xFFE8DEF8),
-    tertiary = Color(0xFFEFB8C8),
-    background = Color(0xFF141218),
-    surface = Color(0xFF141218),
-    surfaceVariant = Color(0xFF49454F),
-    surfaceContainer = Color(0xFF211F26),
-    surfaceContainerLow = Color(0xFF1D1B20),
-    surfaceContainerHigh = Color(0xFF2B2930),
-    onSurface = Color(0xFFE6E0E9),
-    onSurfaceVariant = Color(0xFFCAC4D0),
-    outline = Color(0xFF938F99),
-    outlineVariant = Color(0xFF49454F),
-    error = Color(0xFFFFB4AB),
-    errorContainer = Color(0xFF93000A),
-    onErrorContainer = Color(0xFFFFDAD6),
-)
+private fun paletteScheme(palette: PaletteId): ColorScheme = when (palette) {
+    PaletteId.INDIGO -> baseLight(
+        Color(0xFF6750A4), Color.White, Color(0xFFEADDFF), Color(0xFF21005D),
+        Color(0xFF625B71), Color(0xFFE8DEF8), Color(0xFF1D192B), Color(0xFF7D5260),
+    )
+    PaletteId.SEA_SALT -> baseLight(
+        Color(0xFF006874), Color.White, Color(0xFF97F0FF), Color(0xFF001F24),
+        Color(0xFF4A6366), Color(0xFFCDE7EA), Color(0xFF051F22), Color(0xFF4F5F7D),
+    )
+    PaletteId.FOREST -> baseLight(
+        Color(0xFF386A20), Color.White, Color(0xFFB9F397), Color(0xFF0B2002),
+        Color(0xFF55624C), Color(0xFFD9E8CC), Color(0xFF131F0F), Color(0xFF3F665D),
+    )
+    PaletteId.CORAL -> baseLight(
+        Color(0xFF984061), Color.White, Color(0xFFFFD9E2), Color(0xFF3F001D),
+        Color(0xFF765660), Color(0xFFFFD9E2), Color(0xFF2D151F), Color(0xFF80543B),
+    )
+    PaletteId.SLATE -> baseLight(
+        Color(0xFF485D92), Color.White, Color(0xFFD9E2FF), Color(0xFF001A41),
+        Color(0xFF5A5F71), Color(0xFFDEE2F2), Color(0xFF171B2B), Color(0xFF76546F),
+    )
+}
 
 private val LightSemanticColors = SemanticColors(
     success = Color(0xFF2E7D32), onSuccess = Color.White,
@@ -121,39 +117,26 @@ private val LightSemanticColors = SemanticColors(
     onInfoContainer = Color(0xFF001A41),
 )
 
-private fun semanticColors(dark: Boolean) = if (dark) {
-    SemanticColors(
-        success = Color(0xFFA5D6A7), onSuccess = Color(0xFF103A16),
-        successContainer = Color(0xFF214E27), onSuccessContainer = Color(0xFFC0F0C3),
-        warning = Color(0xFFFFCA7A), warningContainer = Color(0xFF5B3B00),
-        onWarningContainer = Color(0xFFFFE1AC), infoContainer = Color(0xFF294369),
-        onInfoContainer = Color(0xFFD9E2FF),
-    )
-} else LightSemanticColors
-
 @Composable
-fun SkpTheme(content: @Composable () -> Unit) {
+fun SkpTheme(
+    appearance: AppearanceSettings = AppearanceSettings(),
+    content: @Composable () -> Unit,
+) {
     val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
-    val scheme: ColorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark -> dynamicDarkColorScheme(context)
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context).withMilkSurfaces()
-        dark -> DarkColors
-        else -> LightColors
-    }
+    val scheme = paletteScheme(appearance.palette)
 
-    LaunchedEffect(dark) {
+    LaunchedEffect(Unit) {
         val window = (context as? Activity)?.window ?: return@LaunchedEffect
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !dark
-            isAppearanceLightNavigationBars = !dark
+            isAppearanceLightStatusBars = true
+            isAppearanceLightNavigationBars = true
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
         }
     }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalSemanticColors provides semanticColors(dark)) {
-        MaterialTheme(
-            colorScheme = scheme,
-            content = content,
-        )
+    CompositionLocalProvider(LocalSemanticColors provides LightSemanticColors) {
+        MaterialTheme(colorScheme = scheme, content = content)
     }
 }

@@ -39,9 +39,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.linux.permissionmanager.data.LogPayload
+import com.linux.permissionmanager.data.AppearanceSettings
 import com.linux.permissionmanager.data.UiEffect
 import com.linux.permissionmanager.ui.*
 import com.linux.permissionmanager.ui.screens.*
+import com.linux.permissionmanager.ui.theme.AppearanceBackground
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.SkpTheme
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.GetAppListPermissionHelper
@@ -54,7 +57,38 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { SkpTheme { SkpApp() } }
+        setContent { SkpRoot() }
+    }
+}
+
+@Composable
+private fun SkpRoot() {
+    val context = LocalContext.current
+    val application = context.applicationContext as PermissionManagerApplication
+    val appearance by application.container.appearance.state.collectAsStateWithLifecycle()
+    val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            application.container.appearance.setBackground(uri)
+            application.container.events.emit(UiEffect.Snackbar("已设置背景图片"))
+        }
+    }
+
+    SkpTheme(appearance) {
+        AppearanceBackground(
+            appearance = appearance,
+            onImageError = {
+                if (appearance.backgroundEnabled) {
+                    application.container.appearance.clearBackground()
+                    application.container.events.emit(UiEffect.Snackbar("背景图片读取失败，已恢复纯色背景"))
+                }
+            },
+        ) {
+            SkpApp(
+                application = application,
+                appearance = appearance,
+                onPickBackground = { backgroundPicker.launch(arrayOf("image/*")) },
+            )
+        }
     }
 }
 
@@ -72,10 +106,13 @@ private val navigationItems = listOf(
 )
 
 @Composable
-private fun SkpApp() {
+private fun SkpApp(
+    application: PermissionManagerApplication,
+    appearance: AppearanceSettings,
+    onPickBackground: () -> Unit,
+) {
     val context = LocalContext.current
     val activity = context as MainActivity
-    val application = activity.application as PermissionManagerApplication
     val factory = remember { AppViewModelFactory(application) }
     val mainViewModel: MainViewModel = viewModel(factory = factory)
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
@@ -223,6 +260,7 @@ private fun SkpApp() {
                 settings = {
                     SettingsScreen(
                         state = settingsState,
+                        appearance = appearance,
                         bottomPadding = it,
                         onRefresh = settingsViewModel::refresh,
                         onBootFailChange = settingsViewModel::setBootFail,
@@ -235,6 +273,11 @@ private fun SkpApp() {
                         onReboot = settingsViewModel::reboot,
                         onOpenUrl = settingsViewModel::openUrl,
                         onShowChangelog = settingsViewModel::showAppChangelog,
+                        onPaletteChange = application.container.appearance::setPalette,
+                        onPickBackground = onPickBackground,
+                        onBackgroundAlphaChange = application.container.appearance::setBackgroundAlpha,
+                        onClearBackground = application.container.appearance::clearBackground,
+                        onResetAppearance = application.container.appearance::reset,
                     )
                 },
             )
@@ -353,7 +396,7 @@ private fun AdaptiveMainScreen(
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail(
                         modifier = Modifier.fillMaxHeight(),
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
                     ) {
                         Column(
                             modifier = Modifier
@@ -394,7 +437,7 @@ private fun AdaptiveMainScreen(
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 bottomBar = {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha)) {
                         navigationItems.forEachIndexed { index, item ->
                             NavigationBarItem(
                                 selected = navigationPage == index,
@@ -405,7 +448,7 @@ private fun AdaptiveMainScreen(
                         }
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
             ) { outerPadding ->
                 HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), beyondViewportPageCount = 3) { page ->
                     MainPage(page, outerPadding, home, superUser, modules, settings)
