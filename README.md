@@ -93,3 +93,36 @@ app/build/outputs/apk/debug/app-debug.apk
 ## 变更范围
 
 本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native C/C++ 函数体、JNI 声明、AIDL 接口、Magica 服务和现有业务协议保持原语义。
+
+## GitHub Actions 自助品牌构建
+
+仓库内置 `.github/workflows/custom-build.yml`，可在 GitHub 网页上按需构建带自定义品牌的签名 Release APK。Workflow 不修改业务代码，只在构建时注入 Application ID、应用名称和启动图标。
+
+### 首次配置签名 Secrets
+
+进入仓库 **Settings → Secrets and variables → Actions → New repository secret**，添加以下四项：
+
+| Secret | 内容 |
+| --- | --- |
+| `RELEASE_KEYSTORE_BASE64` | PKCS12/JKS 签名文件经过 Base64 编码后的单行文本 |
+| `RELEASE_STORE_PASSWORD` | keystore 密码 |
+| `RELEASE_KEY_ALIAS` | 签名 alias |
+| `RELEASE_KEY_PASSWORD` | alias 密码 |
+
+签名文件和密码不会写入源码。可以使用以下命令生成 Base64 内容（Windows PowerShell 可使用 `[Convert]::ToBase64String([IO.File]::ReadAllBytes('release.p12'))`）：
+
+```bash
+base64 -w 0 release.p12 > release.p12.base64
+```
+
+### 运行构建
+
+1. 打开仓库的 **Actions → Custom branded Release build → Run workflow**。
+2. 填写 `application_id` 和 `app_name`。
+3. 可选填写 `icon_url`（必须是 HTTPS 地址，图片大小不超过 2 MiB，建议使用 PNG）以及 `icon_background`（六位十六进制颜色）。
+4. 需要发布到 Releases 时勾选 `create_release`，并可填写 `release_tag`；留空会使用 `custom-运行编号`。
+5. 工作流完成后，在运行详情的 **Artifacts** 下载 APK；勾选发布时也可以在仓库 **Releases** 页面下载。
+
+`application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
+
+工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。

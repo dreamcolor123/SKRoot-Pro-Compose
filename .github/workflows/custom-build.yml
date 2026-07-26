@@ -1,0 +1,183 @@
+name: Custom branded Release build
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_id:
+        description: 'Android Application ID, for example com.example.custom'
+        required: true
+        type: string
+      app_name:
+        description: 'Launcher and home title'
+        required: true
+        type: string
+      icon_url:
+        description: 'Optional HTTPS PNG icon URL (maximum 2 MiB)'
+        required: false
+        default: ''
+        type: string
+      icon_background:
+        description: 'Adaptive icon background color, for example #0F182B'
+        required: false
+        default: '#0F182B'
+        type: string
+      create_release:
+        description: 'Create a GitHub Release and attach the APK'
+        required: true
+        default: false
+        type: boolean
+      release_tag:
+        description: 'Optional release tag; generated automatically when empty'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: custom-release-${{ github.ref }}-${{ inputs.application_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      APPLICATION_ID: ${{ inputs.application_id }}
+      APP_NAME: ${{ inputs.app_name }}
+      ICON_URL: ${{ inputs.icon_url }}
+      ICON_BACKGROUND: ${{ inputs.icon_background }}
+      RELEASE_TAG_INPUT: ${{ inputs.release_tag }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: pip
+
+      - name: Install icon tooling
+        run: python -m pip install --disable-pip-version-check --quiet Pillow
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build toolchain
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            'platforms;android-35' \
+            'build-tools;35.0.0' \
+            'ndk;26.3.11579264' \
+            'cmake;3.18.1'
+
+      - name: Validate branding inputs
+        run: |
+          python scripts/validate_branding.py \
+            --application-id "$APPLICATION_ID" \
+            --app-name "$APP_NAME" \
+            --release-tag "$RELEASE_TAG_INPUT"
+
+      - name: Download and generate launcher icon
+        if: ${{ env.ICON_URL != '' }}
+        run: |
+          case "$ICON_URL" in
+            https://*) ;;
+            *) echo 'icon_url must use HTTPS'; exit 1 ;;
+          esac
+          curl --fail --location --silent --show-error \
+            --max-filesize 2097152 \
+            --output "$RUNNER_TEMP/custom-icon.png" "$ICON_URL"
+          python scripts/generate_launcher_icons.py \
+            --input "$RUNNER_TEMP/custom-icon.png" \
+            --res-dir app/src/main/res \
+            --background "$ICON_BACKGROUND"
+
+      - name: Decode release keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$RELEASE_KEYSTORE_BASE64" || {
+            echo 'Configure RELEASE_KEYSTORE_BASE64 in repository Actions secrets.'
+            exit 1
+          }
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+          chmod 600 "$RUNNER_TEMP/release.p12"
+
+      - name: Build signed Release APK
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$RELEASE_STORE_PASSWORD"
+          test -n "$RELEASE_KEY_ALIAS"
+          test -n "$RELEASE_KEY_PASSWORD"
+          ./gradlew clean :app:assembleRelease --no-daemon \
+            -PPUBLISH_APPLICATION_ID="$APPLICATION_ID" \
+            -PPUBLISH_APP_NAME="$APP_NAME" \
+            -PRELEASE_STORE_FILE="$RUNNER_TEMP/release.p12" \
+            -PRELEASE_STORE_PASSWORD="$RELEASE_STORE_PASSWORD" \
+            -PRELEASE_KEY_ALIAS="$RELEASE_KEY_ALIAS" \
+            -PRELEASE_KEY_PASSWORD="$RELEASE_KEY_PASSWORD"
+
+      - name: Verify and rename APK
+        id: package
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          APK='app/build/outputs/apk/release/app-release.apk'
+          test -f "$APK"
+          BADGING=$($AAPT dump badging "$APK")
+          printf '%s\n' "$BADGING" | grep -F "package: name='$APPLICATION_ID'" >/dev/null
+          printf '%s\n' "$BADGING" | grep -F "application-label:'$APP_NAME'" >/dev/null
+          "$APKSIGNER" verify --verbose "$APK" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' >/dev/null
+          SAFE_ID=$(printf '%s' "$APPLICATION_ID" | tr '.' '_')
+          SAFE_NAME=$(printf '%s' "$APP_NAME" | tr -c 'A-Za-z0-9._-' '_' | sed 's/_*$//')
+          mkdir -p dist
+          OUTPUT="dist/${SAFE_NAME}-${SAFE_ID}-release.apk"
+          cp "$APK" "$OUTPUT"
+          SHA=$(sha256sum "$OUTPUT" | awk '{print $1}')
+          echo "apk=$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=${RELEASE_TAG_INPUT:-custom-${GITHUB_RUN_NUMBER}}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Custom Release"
+            echo
+            echo "- Application ID: \`$APPLICATION_ID\`"
+            echo "- App name: $APP_NAME"
+            echo "- APK: \`$OUTPUT\`"
+            echo "- SHA-256: \`$SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: custom-release-${{ inputs.application_id }}
+          path: ${{ steps.package.outputs.apk }}
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: ${{ inputs.create_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.package.outputs.tag }}
+          name: ${{ inputs.app_name }} ${{ steps.package.outputs.tag }}
+          generate_release_notes: true
+          files: ${{ steps.package.outputs.apk }}
+          body: |
+            Custom branded Release build.
+
+            - Application ID: `${{ inputs.application_id }}`
+            - Application name: `${{ inputs.app_name }}`
+            - SHA-256: `${{ steps.package.outputs.sha256 }}`
