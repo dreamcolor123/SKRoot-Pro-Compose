@@ -104,6 +104,7 @@ fun HomeScreen(
                             state.environment.rawState.ifBlank { "未返回有效环境状态" },
                         )
                     }
+                    val showEnvironmentActionsInStatus = state.environment.state != EnvironmentState.RUNNING
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = AppearanceTokens.cardSurfaceAlpha),
@@ -135,35 +136,37 @@ fun HomeScreen(
                                     MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Button(
-                                    onClick = onInstall,
-                                    enabled = state.busyAction == null && state.environment.state != EnvironmentState.PENDING_REBOOT,
-                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                                ) {
-                                    Icon(Icons.Outlined.SystemUpdateAlt, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        when (state.environment.state) {
-                                            EnvironmentState.OUTDATED -> "更新环境"
-                                            EnvironmentState.PENDING_REBOOT -> "等待重启"
-                                            else -> "安装环境"
-                                        },
-                                        maxLines = 1,
-                                    )
-                                }
-                                OutlinedButton(
-                                    onClick = { uninstallDialog = true },
-                                    enabled = state.busyAction == null,
-                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = .55f)),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                                ) {
-                                    Icon(Icons.Outlined.DeleteOutline, null, Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("卸载环境", maxLines = 1)
+                            if (showEnvironmentActionsInStatus) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Button(
+                                        onClick = onInstall,
+                                        enabled = state.busyAction == null && state.environment.state != EnvironmentState.PENDING_REBOOT,
+                                        modifier = Modifier.weight(1f).heightIn(min = 56.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                                    ) {
+                                        Icon(Icons.Outlined.SystemUpdateAlt, null, Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            when (state.environment.state) {
+                                                EnvironmentState.OUTDATED -> "更新环境"
+                                                EnvironmentState.PENDING_REBOOT -> "等待重启"
+                                                else -> "安装环境"
+                                            },
+                                            maxLines = 1,
+                                        )
+                                    }
+                                    OutlinedButton(
+                                        onClick = { uninstallDialog = true },
+                                        enabled = state.busyAction == null,
+                                        modifier = Modifier.weight(1f).heightIn(min = 56.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = .55f)),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                                    ) {
+                                        Icon(Icons.Outlined.DeleteOutline, null, Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("卸载环境", maxLines = 1)
+                                    }
                                 }
                             }
                         }
@@ -188,7 +191,7 @@ fun HomeScreen(
                                     Icon(
                                         if (row.good) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
                                         null,
-                                        tint = if (row.good) semantic.success else semantic.warning,
+                                        tint = if (row.good) MaterialTheme.colorScheme.primary else semantic.warning,
                                     )
                                 },
                             )
@@ -197,6 +200,26 @@ fun HomeScreen(
                 }
 
                 item { SectionTitle("基础操作") }
+                if (state.environment.state == EnvironmentState.RUNNING) {
+                    item {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            TonalCard(
+                                modifier = Modifier.weight(1f),
+                                enabled = state.busyAction == null,
+                                onClick = onInstall,
+                            ) {
+                                QuickAction(Icons.Outlined.SystemUpdateAlt, "安装环境", "重新安装或更新")
+                            }
+                            TonalCard(
+                                modifier = Modifier.weight(1f),
+                                enabled = state.busyAction == null,
+                                onClick = { uninstallDialog = true },
+                            ) {
+                                QuickAction(Icons.Outlined.DeleteOutline, "卸载环境", "移除环境与模块")
+                            }
+                        }
+                    }
+                }
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         TonalCard(Modifier.weight(1f), onClick = onTestRoot) {

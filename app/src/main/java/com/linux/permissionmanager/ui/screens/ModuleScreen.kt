@@ -299,7 +299,11 @@ private fun MarketModules(
                         if (module.updateDate.isNotBlank()) StatusTag(module.updateDate, MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer)
                     }
                     Text(module.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 4, overflow = TextOverflow.Ellipsis)
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         if (module.sourceUrl.isNotBlank()) TextButton(onClick = { onOpenUrl(module.sourceUrl) }) { Text("源代码") }
                         if (module.isInstalled) {
                             StatusTag("已安装", LocalSemanticColors.current.successContainer, LocalSemanticColors.current.onSuccessContainer)

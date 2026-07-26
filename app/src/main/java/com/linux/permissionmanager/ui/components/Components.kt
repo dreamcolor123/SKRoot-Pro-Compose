@@ -29,12 +29,13 @@ import com.linux.permissionmanager.ui.theme.AppearanceTokens
 fun TonalCard(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
+    enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = MaterialTheme.shapes.extraLarge
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color.copy(alpha = AppearanceTokens.cardSurfaceAlpha))) {
+        Card(onClick = onClick, enabled = enabled, modifier = modifier, shape = shape, colors = CardDefaults.cardColors(containerColor = color.copy(alpha = AppearanceTokens.cardSurfaceAlpha))) {
             Column(content = content)
         }
     } else {
