@@ -17,8 +17,6 @@ import com.linux.permissionmanager.utils.ShellUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -159,38 +157,31 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
             }
 
             events.emit(UiEffect.Snackbar("正在加载热启动补丁…"))
-            // The OPlus listener must already be waiting while 1.h uploads
-            // its payload. Sequential execution made the script and listener
-            // miss each other and then wait for their full timeout windows.
-            val (bypass, result) = coroutineScope {
-                val bypassTask = async {
-                    withTimeoutOrNull(70_000) {
-                        oneplusStage1(config.rootKey, false)
-                    } ?: "ERROR: 一加/Oppo 拦截配置超时\n"
-                }
-                delay(750)
-                val scriptResult = withTimeoutOrNull(90_000) {
-                    if (config.method.equals("MAGICA", true)) {
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                            "ERROR: MAGICA 模式需要 Android 10 或更高版本"
-                        } else executeMagica(app, config.hotloadCommand)
-                    } else {
-                        withContext(Dispatchers.IO) {
-                            ShellUtils.executeScript(app, config.hotloadCommand)
-                        }
+            // Match the upstream protocol: finish loading the hotload payload
+            // first, then configure the OPlus interception stage. The text log
+            // used to concatenate the interception output before the script
+            // output, which made the two sequential operations look reversed.
+            val result = withTimeoutOrNull(195_000) {
+                if (config.method.equals("MAGICA", true)) {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        "ERROR: MAGICA 模式需要 Android 10 或更高版本"
+                    } else executeMagica(app, config.hotloadCommand)
+                } else {
+                    withContext(Dispatchers.IO) {
+                        ShellUtils.executeScript(app, config.hotloadCommand)
                     }
-                } ?: "ERROR: 热启动脚本执行超时（90 秒）"
-                val bypassResult = withTimeoutOrNull(75_000) { bypassTask.await() }
-                    ?: "ERROR: 一加/Oppo 拦截配置超时\n"
-                bypassResult to scriptResult
-            }
+                }
+            } ?: "ERROR: 热启动脚本执行超时（195 秒）"
+            val bypass = withTimeoutOrNull(70_000) {
+                oneplusStage1(config.rootKey, false)
+            } ?: "ERROR: 一加/Oppo 拦截配置超时\n"
             delay(3_000)
             val ready = withTimeoutOrNull(15_000) {
                 runCatching { native.testBasics(config.rootKey, "Channel").contains("OK") }
                     .getOrDefault(false)
             } ?: false
             if (ready) events.emit(UiEffect.Snackbar("热启动加载完成"))
-            else events.emit(UiEffect.ShowLog("热启动日志", bypass + result))
+            else events.emit(UiEffect.ShowLog("热启动日志", result + "\n" + bypass))
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {

@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.4`
-- Compose UI 发布版本：`v4.5.4-compose.3`
+- Compose UI 发布版本：`v4.5.4-compose.4`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -78,19 +78,11 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-最新公开 Release [v4.5.4-compose.3](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.3) 提供三个 APK：
+最新热启动测试 Release [v4.5.4-compose.4](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.4) 仅提供顺丰版 APK：
 
-- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
-- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
-- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.3/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
+- [`顺丰速运` / `com.sf.activity` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.4/SKRoot-SF-com.sf.activity-v4.5.4-release.apk)
 
-SHA-256：
-
-```text
-d93ef5f8097aa2c5455de45345b25750540a10a1eaecb78cf716abd599ba300e  SKRoot-Pro-com.linux.compose-v4.5.4-release.apk
-91248245e28b84031c87ea9c4d0478ed37bb75350286699280adcff24a7e8c63  SKRoot-SF-com.sf.activity-v4.5.4-release.apk
-59de33ac5b60ee28e6ed2e01b175535695a94df167055cb15290067657c528cc  SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk
-```
+SHA-256：`cbcd5b4ae1bcb9cbaed978f3b2a1d6455e1e11e4225cf48ea37ac291f01bd58f`。
 
 ## 上游项目与致谢
 
@@ -136,6 +128,6 @@ base64 -w 0 release.p12 > release.p12.base64
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。
 
-### v4.5.4-compose.3 热启动握手时序修复
+### v4.5.4-compose.4 Magica 生命周期修复
 
-已同步上游 SKRoot Pro 4.5.4 的 `libkernel_module_kit_static.a` Native 静态库。根据热启动日志，OPlus 监听器与 1.h 脚本此前为串行执行，双方会错过上传握手；现已改为先启动监听器，再并行执行脚本，并保留超时、进程清理和状态复位。模块 ZIP 选择继续使用兼容第三方文件管理器的 `ACTION_GET_CONTENT`。
+新日志确认 OPlus 输出与脚本输出的拼接顺序造成了错误判断；热启动现已恢复上游的“先执行 Magica 脚本、再配置 OPlus 拦截”顺序。Magica 隔离进程跳过 Compose Application 数据层初始化，修复脚本退出后后台子进程继承输出管道导致的无限等待，补充空绑定、绑定死亡、执行阶段和部分输出诊断，并将慢速设备的执行上限调整为 180 秒。`resetprop` 会校验复制结果并设置可执行权限，临时脚本使用独立文件名。

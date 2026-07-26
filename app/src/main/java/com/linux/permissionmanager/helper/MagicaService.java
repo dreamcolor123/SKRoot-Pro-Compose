@@ -29,13 +29,17 @@ public class MagicaService extends Service {
         boolean toolsCreated = false;
         try {
             Os.setuid(0);
+            if (Os.getuid() != 0) {
+                throw new IllegalStateException("Magica setuid completed without uid 0");
+            }
             createResetpropTools();
             toolsCreated = true;
             process = Runtime.getRuntime().exec(new String[]{
                     "/system/bin/sh",
                     "-c",
-                            "TMP=/data/adb/temp_sk.sh; " +
+                            "TMP=/data/adb/temp_sk_$$.sh; " +
                             "echo \"[MAGICA] TMP=$TMP\" >&2; " +
+                            "echo \"[MAGICA] uid=$(id -u)\" >&2; " +
                             "cleanup(){ rm -f \"$TMP\"; }; " +
                             "trap cleanup EXIT HUP INT TERM; " +
                             "rm -f \"$TMP\" 2>/dev/null; " +
@@ -96,11 +100,14 @@ public class MagicaService extends Service {
         }
     }
 
-    private void createResetpropTools() {
+    private void createResetpropTools() throws Exception {
         ApplicationInfo appInfo = getApplicationInfo();
         File srcFile = new File(appInfo.nativeLibraryDir, "libresetprop.so");
         File dstFile = new File("/data/adb/resetprop");
-        FileUtils.copyFile(srcFile, dstFile);
+        if (!FileUtils.copyFile(srcFile, dstFile)) {
+            throw new IllegalStateException("copy resetprop failed: " + srcFile.getAbsolutePath());
+        }
+        Os.chmod(dstFile.getAbsolutePath(), 0755);
     }
 
     private void deleteResetpropTools() {

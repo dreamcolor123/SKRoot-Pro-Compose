@@ -15,5 +15,6 @@ local.properties
 .DS_Store
 Thumbs.db
 *.log
+dist/
 
 app/appKey.jks
