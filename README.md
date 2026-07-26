@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.3`
-- Compose UI 发布版本：`v4.5.3-compose.2`
+- Compose UI 发布版本：`v4.5.3-compose.3`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -78,10 +78,12 @@ app/build/outputs/apk/debug/app-debug.apk
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
 
-本次公开 Release 提供两个签名 APK：
+最新公开 Release 提供两个签名 APK：
 
 - `com.linux.compose` / `SKRoot Bro`
 - `com.sf.activity` / `顺丰速运`
+
+`v4.5.3-compose.3` 另外包含使用新默认图标构建的 `com.linux.permissionmanager` Debug APK。
 
 ## 上游项目与致谢
 
@@ -126,3 +128,7 @@ base64 -w 0 release.p12 > release.p12.base64
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。
+
+### v4.5.3-compose.3 图标更新
+
+默认启动图标已更新为仓库资源中的新角色图标，包含 legacy 与 Android Adaptive Icon 各密度资源。Adaptive Icon 前景层使用 108dp 画布和 72dp 安全区域，避免圆形或圆角遮罩裁切主体。

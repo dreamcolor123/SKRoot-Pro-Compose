@@ -1,0 +1,2 @@
+1.修改build_lib.bat第一行为ndk路径
+2.运行build_lib.bat

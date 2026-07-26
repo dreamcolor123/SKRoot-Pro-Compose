@@ -45,11 +45,16 @@ def main() -> int:
         save_png(legacy, density_dir / "ic_launcher.png")
         save_png(legacy, density_dir / "ic_launcher_round.png")
 
-        foreground_size = round(size * 0.66)
-        foreground = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        # Adaptive icons use a 108dp layer for a 48dp launcher icon. Keep the
+        # supplied artwork inside the 72dp safe zone so masks do not crop it.
+        foreground_canvas = round(size * 2.25)
+        foreground_size = round(foreground_canvas * 0.66)
+        foreground = Image.new(
+            "RGBA", (foreground_canvas, foreground_canvas), (0, 0, 0, 0)
+        )
         foreground_icon = ImageOps.contain(source, (foreground_size, foreground_size), method=Image.Resampling.LANCZOS)
-        left = (size - foreground_icon.width) // 2
-        top = (size - foreground_icon.height) // 2
+        left = (foreground_canvas - foreground_icon.width) // 2
+        top = (foreground_canvas - foreground_icon.height) // 2
         foreground.alpha_composite(foreground_icon, (left, top))
         save_png(foreground, density_dir / "ic_launcher_foreground.png")
 
