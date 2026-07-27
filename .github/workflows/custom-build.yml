@@ -169,15 +169,24 @@ jobs:
 
       - name: Publish GitHub Release
         if: ${{ inputs.create_release }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.package.outputs.tag }}
-          name: ${{ steps.package.outputs.tag }}-UI重构版-${{ inputs.app_name }}
-          generate_release_notes: true
-          files: ${{ steps.package.outputs.apk }}
-          body: |
-            Custom branded Release build.
-
-            - Application ID: `${{ inputs.application_id }}`
-            - Application name: `${{ inputs.app_name }}`
-            - SHA-256: `${{ steps.package.outputs.sha256 }}`
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
+          RELEASE_APK: ${{ steps.package.outputs.apk }}
+          RELEASE_SHA256: ${{ steps.package.outputs.sha256 }}
+        run: |
+          RELEASE_LABEL="${RELEASE_TAG}-UI重构版-${APP_NAME}.apk"
+          NOTES="$RUNNER_TEMP/release-notes.md"
+          {
+            echo 'Custom branded Release build.'
+            echo
+            echo "- Application ID: $APPLICATION_ID"
+            echo "- Application name: $APP_NAME"
+            echo "- SHA-256: $RELEASE_SHA256"
+          } > "$NOTES"
+          gh release create "$RELEASE_TAG" \
+            "${RELEASE_APK}#${RELEASE_LABEL}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "${RELEASE_TAG}-UI重构版-${APP_NAME}" \
+            --notes-file "$NOTES"
