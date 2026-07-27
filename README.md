@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.4`
-- Compose UI 发布版本：`v4.5.4-compose.6`
+- Compose UI 发布版本：`v4.5.4-compose.7`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -86,16 +86,16 @@ app/build/outputs/apk/debug/app-debug.apk
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
-最新公开 Release [v4.5.4-compose.6](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.6) 提供两个 APK：
+最新公开 Release [v4.5.4-compose.7](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.7) 提供两个 APK：
 
-- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.6/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
-- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.6/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
+- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.7/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
+- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.7/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
 
 SHA-256：
 
 ```text
-a49a8c18ddb0896aeb2ae03c28c89d0babcefef0147b909f6c8114b91fc9bb77  SKRoot-Pro-com.linux.compose-v4.5.4-release.apk
-842a3be9e233fab8a53aecbb4e699c0c6e35d70032f91b94754738bc19531757  SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk
+25e520ee5931c575b31ace9553c01b08c74caedc4486780c539854f616f6a1a9  SKRoot-Pro-com.linux.compose-v4.5.4-release.apk
+7b2669ce3ad6d4606c5cef89f43f2b9162e65efd2e700344eddac9be688c9543  SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk
 ```
 
 ## 上游项目与致谢
