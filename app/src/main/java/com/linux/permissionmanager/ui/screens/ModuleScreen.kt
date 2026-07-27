@@ -239,7 +239,7 @@ private fun InstalledModuleCard(
             if (module.description.isNotBlank()) {
                 Text(module.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 if (module.hasWebUi) {
                     TextButton(onClick = { onWebUi(module) }) {
                         Icon(Icons.Outlined.Language, null, Modifier.size(ModuleActionIconSize))
@@ -247,6 +247,7 @@ private fun InstalledModuleCard(
                         Text("WebUI")
                     }
                 }
+                Spacer(Modifier.weight(1f))
                 if (module.update?.hasNewVersion == true) FilledTonalButton(onClick = { onUpdate(module) }) { Text("有新版") }
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, "更多") }
@@ -314,10 +315,10 @@ private fun MarketModules(
                     Text(module.description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 4, overflow = TextOverflow.Ellipsis)
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (module.sourceUrl.isNotBlank()) TextButton(onClick = { onOpenUrl(module.sourceUrl) }) { Text("源代码") }
+                        Spacer(Modifier.weight(1f))
                         if (module.isInstalled) {
                             StatusTag("已安装", LocalSemanticColors.current.successContainer, LocalSemanticColors.current.onSuccessContainer)
                         } else Button(onClick = { onDownload(module) }) {

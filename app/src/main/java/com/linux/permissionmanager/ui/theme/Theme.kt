@@ -39,13 +39,14 @@ val LocalSemanticColors = staticCompositionLocalOf {
 }
 
 val LocalChromeSurfaceAlpha = staticCompositionLocalOf { 1f }
+val LocalControlSurfaceAlpha = staticCompositionLocalOf { AppearanceTokens.defaultControlSurfaceAlpha }
 
 object AppearanceTokens {
     // Page surfaces must remain translucent enough for a user-selected image
     // to survive compositing. Cards and navigation stay more opaque so text
     // remains readable over detailed photographs.
     const val pageSurfaceAlpha = 0.38f
-    const val cardSurfaceAlpha = 0.76f
+    const val defaultControlSurfaceAlpha = 0.76f
     const val dialogSurfaceAlpha = 0.98f
 }
 
@@ -143,6 +144,7 @@ fun SkpTheme(
     CompositionLocalProvider(
         LocalSemanticColors provides LightSemanticColors,
         LocalChromeSurfaceAlpha provides appearance.chromeSurfaceAlpha,
+        LocalControlSurfaceAlpha provides appearance.controlSurfaceAlpha,
     ) {
         MaterialTheme(colorScheme = scheme, content = content)
     }

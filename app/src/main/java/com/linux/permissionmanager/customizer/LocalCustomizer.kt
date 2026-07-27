@@ -72,6 +72,11 @@ object PackageNameValidator {
     }
 }
 
+internal fun adaptiveIconContentSize(viewportSize: Int): Int {
+    require(viewportSize > 0)
+    return viewportSize * 2 / 3
+}
+
 class LocalCustomizerRepository(private val context: Context) {
     companion object {
         private const val KEYSTORE_ALIAS = "skroot_local_customizer_v1"
@@ -196,7 +201,7 @@ class LocalCustomizerRepository(private val context: Context) {
     private fun generateIconEntries(source: Bitmap): Map<String, ByteArray> = buildMap {
         iconEntries.values.forEach { (legacySize, foregroundSize, directory) ->
             val legacy = renderCenterCrop(source, legacySize)
-            val foreground = renderCenterCrop(source, foregroundSize)
+            val foreground = renderAdaptiveForeground(source, foregroundSize)
             try {
                 val legacyPng = legacy.toPng()
                 put("$directory/ic_launcher.png", legacyPng)
@@ -212,13 +217,35 @@ class LocalCustomizerRepository(private val context: Context) {
     private fun renderCenterCrop(source: Bitmap, size: Int): Bitmap {
         val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
-        val scale = maxOf(size.toFloat() / source.width, size.toFloat() / source.height)
+        drawCenterCrop(source, canvas, android.graphics.RectF(0f, 0f, size.toFloat(), size.toFloat()))
+        return output
+    }
+
+    /**
+     * Adaptive icon foregrounds use a 108 dp viewport while launchers expose only the
+     * centered mask area. Filling the entire viewport makes a user supplied, already
+     * composed app icon appear roughly 1.5x larger. Keep it inside the standard 72 dp
+     * content area so its installed size matches the picker preview and legacy icon.
+     */
+    private fun renderAdaptiveForeground(source: Bitmap, size: Int): Bitmap {
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val contentSize = adaptiveIconContentSize(size).toFloat()
+        val inset = (size - contentSize) / 2f
+        drawCenterCrop(source, canvas, android.graphics.RectF(inset, inset, inset + contentSize, inset + contentSize))
+        return output
+    }
+
+    private fun drawCenterCrop(source: Bitmap, canvas: Canvas, bounds: android.graphics.RectF) {
+        val scale = maxOf(bounds.width() / source.width, bounds.height() / source.height)
         val width = source.width * scale
         val height = source.height * scale
-        val left = (size - width) / 2f
-        val top = (size - height) / 2f
+        val left = bounds.centerX() - width / 2f
+        val top = bounds.centerY() - height / 2f
+        val checkpoint = canvas.save()
+        canvas.clipRect(bounds)
         canvas.drawBitmap(source, null, android.graphics.RectF(left, top, left + width, top + height), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-        return output
+        canvas.restoreToCount(checkpoint)
     }
 
     private fun Bitmap.toPng(): ByteArray = ByteArrayOutputStream().use { out ->

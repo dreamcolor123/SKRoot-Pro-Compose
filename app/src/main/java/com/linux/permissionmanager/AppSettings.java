@@ -13,6 +13,7 @@ public class AppSettings {
     public static final String KEY_APPEARANCE_BACKGROUND_URI = "appearance_background_uri";
     public static final String KEY_APPEARANCE_BACKGROUND_ALPHA = "appearance_background_alpha";
     public static final String KEY_APPEARANCE_CHROME_TRANSPARENCY = "appearance_chrome_transparency";
+    public static final String KEY_APPEARANCE_CONTROL_TRANSPARENCY = "appearance_control_transparency";
     public static final String KEY_MANAGER_UPDATE_CHECK_ENABLED = "manager_update_check_enabled";
     private static SharedPreferences preferences;
 

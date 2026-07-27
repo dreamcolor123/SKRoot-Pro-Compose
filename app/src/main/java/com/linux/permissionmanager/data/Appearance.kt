@@ -42,9 +42,11 @@ data class AppearanceSettings(
     val backgroundUri: String? = null,
     val backgroundAlpha: Float = 0.28f,
     val chromeTransparency: Float = 0f,
+    val controlTransparency: Float = 0.24f,
 ) {
     val backgroundEnabled: Boolean get() = !backgroundUri.isNullOrBlank()
     val chromeSurfaceAlpha: Float get() = (1f - chromeTransparency).coerceIn(0f, 1f)
+    val controlSurfaceAlpha: Float get() = (1f - controlTransparency).coerceIn(0f, 1f)
 }
 
 class AppearanceStore(private val context: Context) {
@@ -88,6 +90,10 @@ class AppearanceStore(private val context: Context) {
         update(mutableState.value.copy(chromeTransparency = value.coerceIn(0f, 1f)))
     }
 
+    fun setControlTransparency(value: Float) {
+        update(mutableState.value.copy(controlTransparency = value.coerceIn(0f, 1f)))
+    }
+
     fun reset() {
         clearBackground()
         update(AppearanceSettings())
@@ -100,6 +106,8 @@ class AppearanceStore(private val context: Context) {
             .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.28f,
         chromeTransparency = AppSettings.getString(AppSettings.KEY_APPEARANCE_CHROME_TRANSPARENCY, "0")
             .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0f,
+        controlTransparency = AppSettings.getString(AppSettings.KEY_APPEARANCE_CONTROL_TRANSPARENCY, "0.24")
+            .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.24f,
     )
 
     private fun update(value: AppearanceSettings) {
@@ -108,5 +116,6 @@ class AppearanceStore(private val context: Context) {
         AppSettings.setString(AppSettings.KEY_APPEARANCE_BACKGROUND_URI, value.backgroundUri.orEmpty())
         AppSettings.setString(AppSettings.KEY_APPEARANCE_BACKGROUND_ALPHA, value.backgroundAlpha.toString())
         AppSettings.setString(AppSettings.KEY_APPEARANCE_CHROME_TRANSPARENCY, value.chromeTransparency.toString())
+        AppSettings.setString(AppSettings.KEY_APPEARANCE_CONTROL_TRANSPARENCY, value.controlTransparency.toString())
     }
 }

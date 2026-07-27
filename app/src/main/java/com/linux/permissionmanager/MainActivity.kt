@@ -412,6 +412,7 @@ private fun SkpApp(
                         onPickBackground = onPickBackground,
                         onBackgroundAlphaChange = application.container.appearance::setBackgroundAlpha,
                         onChromeTransparencyChange = application.container.appearance::setChromeTransparency,
+                        onControlTransparencyChange = application.container.appearance::setControlTransparency,
                         onClearBackground = application.container.appearance::clearBackground,
                         onResetAppearance = application.container.appearance::reset,
                         onOpenLocalCustomizer = localCustomizerViewModel::show,

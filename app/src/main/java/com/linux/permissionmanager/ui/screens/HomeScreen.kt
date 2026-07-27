@@ -18,6 +18,7 @@ import com.linux.permissionmanager.ui.HomeUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.LocalSemanticColors
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalControlSurfaceAlpha
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,7 +120,7 @@ fun HomeScreen(
                     val showEnvironmentActionsInStatus = state.environment.state != EnvironmentState.RUNNING
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = AppearanceTokens.cardSurfaceAlpha),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = LocalControlSurfaceAlpha.current),
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         shape = MaterialTheme.shapes.extraLarge,
                     ) {

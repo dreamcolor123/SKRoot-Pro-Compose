@@ -14,6 +14,12 @@ import java.nio.ByteOrder
 
 class LocalCustomizerTest {
     @Test
+    fun adaptiveIconUsesStandardSafeContentArea() {
+        assertEquals(72, adaptiveIconContentSize(108))
+        assertEquals(288, adaptiveIconContentSize(432))
+    }
+
+    @Test
     fun incompleteCustomizerInputUsesDefaultsAndCanBuild() {
         val state = LocalCustomizerUiState(
             defaultPackageName = "com.example.defaultmanager",

@@ -113,6 +113,9 @@ class JsonParsersTest {
         assertEquals(0f, appearance.chromeTransparency, 0.0001f)
         assertEquals(1f, appearance.chromeSurfaceAlpha, 0.0001f)
         assertEquals(0f, appearance.copy(chromeTransparency = 1f).chromeSurfaceAlpha, 0.0001f)
+        assertEquals(0.24f, appearance.controlTransparency, 0.0001f)
+        assertEquals(0.76f, appearance.controlSurfaceAlpha, 0.0001f)
+        assertEquals(0f, appearance.copy(controlTransparency = 1f).controlSurfaceAlpha, 0.0001f)
         assertEquals(5, PaletteId.values().size)
     }
 

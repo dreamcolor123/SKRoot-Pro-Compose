@@ -1,6 +1,8 @@
 package com.linux.permissionmanager.ui.screens
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.horizontalScroll
@@ -20,6 +23,7 @@ import com.linux.permissionmanager.ui.SettingsUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalControlSurfaceAlpha
 import kotlin.math.roundToInt
 
 private data class Choice(val title: String, val value: String)
@@ -70,6 +74,7 @@ fun SettingsScreen(
     onPickBackground: () -> Unit,
     onBackgroundAlphaChange: (Float) -> Unit,
     onChromeTransparencyChange: (Float) -> Unit,
+    onControlTransparencyChange: (Float) -> Unit,
     onClearBackground: () -> Unit,
     onResetAppearance: () -> Unit,
     onOpenLocalCustomizer: () -> Unit,
@@ -80,6 +85,7 @@ fun SettingsScreen(
     var pendingReboot by remember { mutableStateOf<RebootChoice?>(null) }
     var clearLogDialog by remember { mutableStateOf(false) }
     var resetAppearanceDialog by remember { mutableStateOf(false) }
+    var transparencyExpanded by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -137,23 +143,6 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("导航栏与标题栏透明度", style = MaterialTheme.typography.bodyMedium)
-                                Text("${(appearance.chromeTransparency * 100).roundToInt()}%", color = MaterialTheme.colorScheme.primary)
-                            }
-                            Slider(
-                                value = appearance.chromeTransparency,
-                                onValueChange = onChromeTransparencyChange,
-                                valueRange = 0f..1f,
-                                steps = 19,
-                            )
-                            Text(
-                                "0% 为不透明，100% 为完全透明；内容区域会避开栏位以防文字重叠。",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
                         SegmentedItem(
                             title = "背景图片",
                             summary = appearance.backgroundUri?.let { backgroundName(it) } ?: "使用纯色背景",
@@ -161,24 +150,57 @@ fun SettingsScreen(
                             onClick = onPickBackground,
                             trailing = { Icon(Icons.Outlined.ChevronRight, null) },
                         )
-                        if (appearance.backgroundEnabled) {
-                            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text("背景透明度", style = MaterialTheme.typography.bodyMedium)
-                                    Text("${(appearance.backgroundAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.primary)
+                        SegmentedItem(
+                            title = "透明度设置",
+                            summary = transparencySummary(appearance),
+                            icon = Icons.Outlined.Opacity,
+                            onClick = { transparencyExpanded = !transparencyExpanded },
+                            trailing = {
+                                Icon(
+                                    if (transparencyExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                                    if (transparencyExpanded) "收起透明度设置" else "展开透明度设置",
+                                )
+                            },
+                        )
+                        AnimatedVisibility(visible = transparencyExpanded) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.large,
+                                color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = LocalControlSurfaceAlpha.current),
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                                ) {
+                                    TransparencySlider(
+                                        title = "导航栏与标题栏透明度",
+                                        value = appearance.chromeTransparency,
+                                        onValueChange = onChromeTransparencyChange,
+                                        description = "0% 为不透明，100% 为完全透明。",
+                                    )
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    TransparencySlider(
+                                        title = "控件背景透明度",
+                                        value = appearance.controlTransparency,
+                                        onValueChange = onControlTransparencyChange,
+                                        description = "应用于功能按钮、信息卡片与设置项背景，不影响弹窗。",
+                                    )
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    TransparencySlider(
+                                        title = "背景图片可见度",
+                                        value = appearance.backgroundAlpha,
+                                        onValueChange = onBackgroundAlphaChange,
+                                        enabled = appearance.backgroundEnabled,
+                                        description = if (appearance.backgroundEnabled) {
+                                            "0% 为隐藏，100% 为完整显示。"
+                                        } else {
+                                            "选择背景图片后即可调节。"
+                                        },
+                                    )
                                 }
-                                Slider(
-                                    value = appearance.backgroundAlpha,
-                                    onValueChange = onBackgroundAlphaChange,
-                                    valueRange = 0f..1f,
-                                    steps = 19,
-                                )
-                                Text(
-                                    "支持 0%–100%；数值越高，背景图片越明显。",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
                             }
+                        }
+                        if (appearance.backgroundEnabled) {
                             SegmentedItem(
                                 title = "清除背景图片",
                                 summary = "恢复纯色背景",
@@ -189,7 +211,7 @@ fun SettingsScreen(
                         }
                         SegmentedItem(
                             title = "恢复默认外观",
-                            summary = "靛蓝紫、栏位透明度 0%、纯白背景",
+                            summary = "靛蓝紫、栏位透明度 0%、控件透明度 24%、纯白背景",
                             icon = Icons.Outlined.Restore,
                             onClick = { resetAppearanceDialog = true },
                             trailing = { Icon(Icons.Outlined.ChevronRight, null) },
@@ -336,7 +358,7 @@ fun SettingsScreen(
             onDismissRequest = { resetAppearanceDialog = false },
             icon = { Icon(Icons.Outlined.Restore, null) },
             title = { Text("恢复默认外观？") },
-            text = { Text("将清除主题选择和背景图片，不影响 Root Key、授权及模块数据。") },
+            text = { Text("将恢复主题、背景图片和全部透明度设置，不影响 Root Key、授权及模块数据。") },
             confirmButton = {
                 Button(onClick = { resetAppearanceDialog = false; onResetAppearance() }) { Text("恢复") }
             },
@@ -344,6 +366,50 @@ fun SettingsScreen(
         )
     }
 }
+
+@Composable
+private fun TransparencySlider(
+    title: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    description: String,
+    enabled: Boolean = true,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            )
+            Text(
+                "${(value * 100).roundToInt()}%",
+                color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+            )
+        }
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            enabled = enabled,
+            valueRange = 0f..1f,
+            steps = 19,
+        )
+        Text(
+            description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun transparencySummary(appearance: AppearanceSettings): String =
+    "栏位 ${(appearance.chromeTransparency * 100).roundToInt()}% · " +
+        "控件 ${(appearance.controlTransparency * 100).roundToInt()}% · " +
+        if (appearance.backgroundEnabled) {
+            "图片 ${(appearance.backgroundAlpha * 100).roundToInt()}%"
+        } else {
+            "图片未设置"
+        }
 
 @Composable
 private fun PaletteOption(
@@ -355,8 +421,10 @@ private fun PaletteOption(
         onClick = onClick,
         modifier = Modifier.width(132.dp),
         shape = MaterialTheme.shapes.large,
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = if (selected) 2.dp else 0.dp,
+        color = (if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+            .copy(alpha = LocalControlSurfaceAlpha.current),
+        tonalElevation = 0.dp,
+        border = if (selected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
