@@ -23,6 +23,7 @@ import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.LocalSemanticColors
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 
 private val ModuleActionIconSize = 18.dp
 private val ModuleMenuIconSize = 20.dp
@@ -187,15 +188,22 @@ private fun InstalledModules(
     onChangelog: (InstalledModule) -> Unit,
     onUpdate: (InstalledModule) -> Unit,
 ) {
+    val drawsBehindNavigation = LocalContentDrawsBehindNavigation.current
+    val navigationClearance = bottomPadding.calculateBottomPadding()
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(
                 top = innerPadding.calculateTopPadding(),
-                bottom = bottomPadding.calculateBottomPadding(),
+                bottom = if (drawsBehindNavigation) 0.dp else navigationClearance,
             )
             .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 20.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 12.dp,
+            end = 16.dp,
+            bottom = 20.dp + if (drawsBehindNavigation) navigationClearance else 0.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (state.installedLoading) item { LoadingState("正在读取已安装模块…") }
@@ -276,15 +284,22 @@ private fun MarketModules(
     onDownload: (MarketModule) -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
+    val drawsBehindNavigation = LocalContentDrawsBehindNavigation.current
+    val navigationClearance = bottomPadding.calculateBottomPadding()
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(
                 top = innerPadding.calculateTopPadding(),
-                bottom = bottomPadding.calculateBottomPadding(),
+                bottom = if (drawsBehindNavigation) 0.dp else navigationClearance,
             )
             .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 20.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 12.dp,
+            end = 16.dp,
+            bottom = 20.dp + if (drawsBehindNavigation) navigationClearance else 0.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {

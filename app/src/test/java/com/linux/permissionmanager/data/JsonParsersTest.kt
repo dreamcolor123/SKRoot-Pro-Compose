@@ -116,6 +116,12 @@ class JsonParsersTest {
         assertEquals(0.24f, appearance.controlTransparency, 0.0001f)
         assertEquals(0.76f, appearance.controlSurfaceAlpha, 0.0001f)
         assertEquals(0f, appearance.copy(controlTransparency = 1f).controlSurfaceAlpha, 0.0001f)
+        assertTrue(appearance.glassNavigationEnabled)
+        assertEquals(0.5f, appearance.glassNavigationTransparency, 0.0001f)
+        assertEquals(0.5f, appearance.glassNavigationOpacity, 0.0001f)
+        assertEquals(1f, appearance.copy(glassNavigationTransparency = -1f).glassNavigationOpacity, 0.0001f)
+        assertEquals(0f, appearance.copy(glassNavigationTransparency = 1f).glassNavigationOpacity, 0.0001f)
+        assertEquals(0f, appearance.copy(glassNavigationTransparency = 2f).glassNavigationOpacity, 0.0001f)
         assertEquals(5, PaletteId.values().size)
     }
 

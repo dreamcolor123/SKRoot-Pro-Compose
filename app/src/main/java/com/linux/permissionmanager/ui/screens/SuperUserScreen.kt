@@ -20,6 +20,7 @@ import com.linux.permissionmanager.ui.SuperUserUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,8 @@ fun SuperUserScreen(
     var pendingRemove by remember { mutableStateOf<SuGrant?>(null) }
     var clearConfirm by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val drawsBehindNavigation = LocalContentDrawsBehindNavigation.current
+    val navigationClearance = bottomPadding.calculateBottomPadding()
 
     Scaffold(
         topBar = {
@@ -90,13 +93,13 @@ fun SuperUserScreen(
                 .fillMaxSize()
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = bottomPadding.calculateBottomPadding(),
+                    bottom = if (drawsBehindNavigation) 0.dp else navigationClearance,
                 )
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(
                 start = 16.dp, end = 16.dp,
                 top = 8.dp,
-                bottom = 20.dp,
+                bottom = 20.dp + if (drawsBehindNavigation) navigationClearance else 0.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {

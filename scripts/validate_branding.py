@@ -25,8 +25,15 @@ def main() -> int:
         )
 
     app_name = args.app_name.strip()
-    if not app_name or len(app_name) > 80 or any(ord(ch) < 0x20 for ch in app_name):
-        parser.error("app_name must contain 1-80 printable characters")
+    if (
+        not app_name
+        or len(app_name) > 80
+        or any(ord(ch) < 0x20 for ch in app_name)
+        or any(ch in "/\\" for ch in app_name)
+    ):
+        parser.error(
+            "app_name must contain 1-80 printable characters without path separators"
+        )
 
     if args.release_tag and not RELEASE_TAG.fullmatch(args.release_tag.strip()):
         parser.error("release_tag contains unsupported characters")

@@ -20,6 +20,7 @@ import com.linux.permissionmanager.ui.theme.LocalSemanticColors
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalControlSurfaceAlpha
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +43,8 @@ fun HomeScreen(
     var pendingReboot by remember { mutableStateOf<RebootOption?>(null) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val semantic = LocalSemanticColors.current
+    val drawsBehindNavigation = LocalContentDrawsBehindNavigation.current
+    val navigationClearance = bottomPadding.calculateBottomPadding()
     val context = LocalContext.current
     val applicationLabel = remember(context.packageName) {
         runCatching { context.packageManager.getApplicationLabel(context.applicationInfo).toString() }
@@ -76,14 +79,14 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = bottomPadding.calculateBottomPadding(),
+                    bottom = if (drawsBehindNavigation) 0.dp else navigationClearance,
                 )
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 top = 8.dp,
-                bottom = 20.dp,
+                bottom = 20.dp + if (drawsBehindNavigation) navigationClearance else 0.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(13.dp),
         ) {

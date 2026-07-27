@@ -143,15 +143,14 @@ jobs:
           "$APKSIGNER" verify --verbose "$APK" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' >/dev/null
           ICON_ENTRY_COUNT=$(unzip -Z1 "$APK" | grep -Ec 'res/mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)-v4/ic_launcher(_round|_foreground)?\.png|res/mipmap-anydpi-v26/ic_launcher(_round)?\.xml')
           test "$ICON_ENTRY_COUNT" -eq 17
-          SAFE_ID=$(printf '%s' "$APPLICATION_ID" | tr '.' '_')
-          SAFE_NAME=$(printf '%s' "$APP_NAME" | tr -c 'A-Za-z0-9._-' '_' | sed 's/_*$//')
+          TAG="${RELEASE_TAG_INPUT:-custom-${GITHUB_RUN_NUMBER}}"
           mkdir -p dist
-          OUTPUT="dist/${SAFE_NAME}-${SAFE_ID}-release.apk"
+          OUTPUT="dist/${TAG}-UI重构版-${APP_NAME}.apk"
           cp "$APK" "$OUTPUT"
           SHA=$(sha256sum "$OUTPUT" | awk '{print $1}')
           echo "apk=$OUTPUT" >> "$GITHUB_OUTPUT"
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
-          echo "tag=${RELEASE_TAG_INPUT:-custom-${GITHUB_RUN_NUMBER}}" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           {
             echo "## Custom Release"
             echo
@@ -173,7 +172,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.package.outputs.tag }}
-          name: ${{ inputs.app_name }} ${{ steps.package.outputs.tag }}
+          name: ${{ steps.package.outputs.tag }}-UI重构版-${{ inputs.app_name }}
           generate_release_notes: true
           files: ${{ steps.package.outputs.apk }}
           body: |

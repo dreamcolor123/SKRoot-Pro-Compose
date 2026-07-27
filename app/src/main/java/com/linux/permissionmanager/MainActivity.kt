@@ -33,7 +33,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -47,13 +46,18 @@ import com.linux.permissionmanager.data.LogPayload
 import com.linux.permissionmanager.data.AppearanceSettings
 import com.linux.permissionmanager.data.UiEffect
 import com.linux.permissionmanager.ui.*
+import com.linux.permissionmanager.ui.components.GlassFloatingNavigationBar
+import com.linux.permissionmanager.ui.components.GlassNavigationItem
 import com.linux.permissionmanager.ui.screens.*
 import com.linux.permissionmanager.ui.theme.AppearanceBackground
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 import com.linux.permissionmanager.ui.theme.SkpTheme
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.GetAppListPermissionHelper
 import com.linux.permissionmanager.utils.UrlIntentUtils
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -74,6 +78,7 @@ private fun SkpRoot() {
     val context = LocalContext.current
     val application = context.applicationContext as PermissionManagerApplication
     val appearance by application.container.appearance.state.collectAsStateWithLifecycle()
+    val glassHazeState = remember { HazeState() }
     val backgroundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) {
             application.container.appearance.setBackground(uri)
@@ -84,6 +89,11 @@ private fun SkpRoot() {
     SkpTheme(appearance) {
         AppearanceBackground(
             appearance = appearance,
+            backgroundModifier = if (appearance.glassNavigationEnabled) {
+                Modifier.hazeSource(glassHazeState, zIndex = 0f)
+            } else {
+                Modifier
+            },
             onImageError = {
                 if (appearance.backgroundEnabled) {
                     application.container.appearance.clearBackground()
@@ -94,17 +104,12 @@ private fun SkpRoot() {
             SkpApp(
                 application = application,
                 appearance = appearance,
+                glassHazeState = glassHazeState,
                 onPickBackground = { backgroundPicker.launch(arrayOf("image/*")) },
             )
         }
     }
 }
-
-private data class NavigationItem(
-    val label: String,
-    val selectedIcon: ImageVector,
-    val icon: ImageVector,
-)
 
 private data class PendingLocalInstall(
     val file: File,
@@ -112,16 +117,17 @@ private data class PendingLocalInstall(
 )
 
 private val navigationItems = listOf(
-    NavigationItem("主页", Icons.Filled.Home, Icons.Outlined.Home),
-    NavigationItem("授权", Icons.Filled.Shield, Icons.Outlined.Shield),
-    NavigationItem("模块", Icons.Filled.Extension, Icons.Outlined.Extension),
-    NavigationItem("设置", Icons.Filled.Settings, Icons.Outlined.Settings),
+    GlassNavigationItem("主页", Icons.Filled.Home, Icons.Outlined.Home),
+    GlassNavigationItem("授权", Icons.Filled.Shield, Icons.Outlined.Shield),
+    GlassNavigationItem("模块", Icons.Filled.Extension, Icons.Outlined.Extension),
+    GlassNavigationItem("设置", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
 @Composable
 private fun SkpApp(
     application: PermissionManagerApplication,
     appearance: AppearanceSettings,
+    glassHazeState: HazeState,
     onPickBackground: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -338,6 +344,9 @@ private fun SkpApp(
                 selectedPage = mainState.selectedPage,
                 onPageSelected = mainViewModel::selectPage,
                 snackbarHostState = snackbarHostState,
+                glassNavigationEnabled = appearance.glassNavigationEnabled,
+                glassNavigationTransparency = appearance.glassNavigationTransparency,
+                glassHazeState = glassHazeState,
                 home = {
                     HomeScreen(
                         state = homeState,
@@ -413,6 +422,8 @@ private fun SkpApp(
                         onBackgroundAlphaChange = application.container.appearance::setBackgroundAlpha,
                         onChromeTransparencyChange = application.container.appearance::setChromeTransparency,
                         onControlTransparencyChange = application.container.appearance::setControlTransparency,
+                        onGlassNavigationChange = application.container.appearance::setGlassNavigationEnabled,
+                        onGlassNavigationTransparencyChange = application.container.appearance::setGlassNavigationTransparency,
                         onClearBackground = application.container.appearance::clearBackground,
                         onResetAppearance = application.container.appearance::reset,
                         onOpenLocalCustomizer = localCustomizerViewModel::show,
@@ -482,6 +493,9 @@ private fun AdaptiveMainScreen(
     selectedPage: Int,
     onPageSelected: (Int) -> Unit,
     snackbarHostState: SnackbarHostState,
+    glassNavigationEnabled: Boolean,
+    glassNavigationTransparency: Float,
+    glassHazeState: HazeState,
     home: @Composable (PaddingValues) -> Unit,
     superUser: @Composable (PaddingValues) -> Unit,
     modules: @Composable (PaddingValues) -> Unit,
@@ -584,27 +598,83 @@ private fun AdaptiveMainScreen(
                         .padding(16.dp),
                 )
             }
+        } else if (glassNavigationEnabled) {
+            val navigationBarInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val floatingBarClearance = 88.dp + navigationBarInset
+            Box(Modifier.fillMaxSize()) {
+                CompositionLocalProvider(LocalContentDrawsBehindNavigation provides true) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(glassHazeState, zIndex = 1f),
+                        beyondViewportPageCount = 3,
+                    ) { page ->
+                        MainPage(
+                            page,
+                            PaddingValues(bottom = floatingBarClearance),
+                            home,
+                            superUser,
+                            modules,
+                            settings,
+                        )
+                    }
+                }
+
+                GlassFloatingNavigationBar(
+                    items = navigationItems,
+                    selectedIndex = navigationPage,
+                    hazeState = glassHazeState,
+                    transparency = glassNavigationTransparency,
+                    onItemSelected = ::navigateToPage,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = floatingBarClearance + 8.dp,
+                        ),
+                )
+            }
         } else {
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 bottomBar = {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current)) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(
+                            alpha = LocalChromeSurfaceAlpha.current
+                        )
+                    ) {
                         navigationItems.forEachIndexed { index, item ->
                             NavigationBarItem(
                                 selected = navigationPage == index,
                                 onClick = { navigateToPage(index) },
-                                icon = { Icon(if (navigationPage == index) item.selectedIcon else item.icon, item.label) },
+                                icon = {
+                                    Icon(
+                                        if (navigationPage == index) item.selectedIcon else item.icon,
+                                        item.label,
+                                    )
+                                },
                                 label = { Text(item.label) },
                             )
                         }
                     }
                 },
-                // Each page owns its translucent surface. Keeping the outer
-                // scaffold transparent avoids two white layers combining into
-                // an effectively opaque background on phones.
                 containerColor = Color.Transparent,
             ) { outerPadding ->
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize(), beyondViewportPageCount = 3) { page ->
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    beyondViewportPageCount = 3,
+                ) { page ->
                     MainPage(page, outerPadding, home, superUser, modules, settings)
                 }
             }

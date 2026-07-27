@@ -27,6 +27,7 @@ import kotlin.math.max
 @Composable
 fun AppearanceBackground(
     appearance: AppearanceSettings,
+    backgroundModifier: Modifier = Modifier,
     onImageError: () -> Unit = {},
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -45,24 +46,30 @@ fun AppearanceBackground(
         if (uri != null && loaded && bitmap == null) onImageError()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        if (bitmap != null && appearance.backgroundEnabled) {
-            Image(
-                bitmap = bitmap!!.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                alpha = appearance.backgroundAlpha,
-            )
-        }
-        // A light scrim keeps text readable over bright photographs without
-        // hiding the selected image.
-        if (bitmap != null && appearance.backgroundEnabled) {
-            Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.12f)))
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Keep the background in its own layer so effects such as Haze can
+        // capture the actual wallpaper instead of only the translucent page
+        // surfaces drawn above it.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(backgroundModifier)
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            if (bitmap != null && appearance.backgroundEnabled) {
+                Image(
+                    bitmap = bitmap!!.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alpha = appearance.backgroundAlpha,
+                )
+            }
+            // A light scrim keeps text readable over bright photographs without
+            // hiding the selected image.
+            if (bitmap != null && appearance.backgroundEnabled) {
+                Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.12f)))
+            }
         }
         content()
     }

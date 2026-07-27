@@ -40,6 +40,7 @@ val LocalSemanticColors = staticCompositionLocalOf {
 
 val LocalChromeSurfaceAlpha = staticCompositionLocalOf { 1f }
 val LocalControlSurfaceAlpha = staticCompositionLocalOf { AppearanceTokens.defaultControlSurfaceAlpha }
+val LocalContentDrawsBehindNavigation = staticCompositionLocalOf { false }
 
 object AppearanceTokens {
     // Page surfaces must remain translucent enough for a user-selected image

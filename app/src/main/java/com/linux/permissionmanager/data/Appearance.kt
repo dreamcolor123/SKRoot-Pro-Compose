@@ -43,10 +43,13 @@ data class AppearanceSettings(
     val backgroundAlpha: Float = 0.28f,
     val chromeTransparency: Float = 0f,
     val controlTransparency: Float = 0.24f,
+    val glassNavigationEnabled: Boolean = true,
+    val glassNavigationTransparency: Float = 0.5f,
 ) {
     val backgroundEnabled: Boolean get() = !backgroundUri.isNullOrBlank()
     val chromeSurfaceAlpha: Float get() = (1f - chromeTransparency).coerceIn(0f, 1f)
     val controlSurfaceAlpha: Float get() = (1f - controlTransparency).coerceIn(0f, 1f)
+    val glassNavigationOpacity: Float get() = (1f - glassNavigationTransparency).coerceIn(0f, 1f)
 }
 
 class AppearanceStore(private val context: Context) {
@@ -94,6 +97,14 @@ class AppearanceStore(private val context: Context) {
         update(mutableState.value.copy(controlTransparency = value.coerceIn(0f, 1f)))
     }
 
+    fun setGlassNavigationEnabled(value: Boolean) {
+        update(mutableState.value.copy(glassNavigationEnabled = value))
+    }
+
+    fun setGlassNavigationTransparency(value: Float) {
+        update(mutableState.value.copy(glassNavigationTransparency = value.coerceIn(0f, 1f)))
+    }
+
     fun reset() {
         clearBackground()
         update(AppearanceSettings())
@@ -108,6 +119,10 @@ class AppearanceStore(private val context: Context) {
             .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0f,
         controlTransparency = AppSettings.getString(AppSettings.KEY_APPEARANCE_CONTROL_TRANSPARENCY, "0.24")
             .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.24f,
+        glassNavigationEnabled = AppSettings.getBoolean(AppSettings.KEY_APPEARANCE_GLASS_NAVIGATION_ENABLED, true),
+        glassNavigationTransparency = AppSettings
+            .getString(AppSettings.KEY_APPEARANCE_GLASS_NAVIGATION_TRANSPARENCY, "0.5")
+            .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.5f,
     )
 
     private fun update(value: AppearanceSettings) {
@@ -117,5 +132,10 @@ class AppearanceStore(private val context: Context) {
         AppSettings.setString(AppSettings.KEY_APPEARANCE_BACKGROUND_ALPHA, value.backgroundAlpha.toString())
         AppSettings.setString(AppSettings.KEY_APPEARANCE_CHROME_TRANSPARENCY, value.chromeTransparency.toString())
         AppSettings.setString(AppSettings.KEY_APPEARANCE_CONTROL_TRANSPARENCY, value.controlTransparency.toString())
+        AppSettings.setBoolean(AppSettings.KEY_APPEARANCE_GLASS_NAVIGATION_ENABLED, value.glassNavigationEnabled)
+        AppSettings.setString(
+            AppSettings.KEY_APPEARANCE_GLASS_NAVIGATION_TRANSPARENCY,
+            value.glassNavigationTransparency.toString(),
+        )
     }
 }

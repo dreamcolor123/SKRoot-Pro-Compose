@@ -24,6 +24,7 @@ import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 import com.linux.permissionmanager.ui.theme.LocalControlSurfaceAlpha
+import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 import kotlin.math.roundToInt
 
 private data class Choice(val title: String, val value: String)
@@ -75,6 +76,8 @@ fun SettingsScreen(
     onBackgroundAlphaChange: (Float) -> Unit,
     onChromeTransparencyChange: (Float) -> Unit,
     onControlTransparencyChange: (Float) -> Unit,
+    onGlassNavigationChange: (Boolean) -> Unit,
+    onGlassNavigationTransparencyChange: (Float) -> Unit,
     onClearBackground: () -> Unit,
     onResetAppearance: () -> Unit,
     onOpenLocalCustomizer: () -> Unit,
@@ -87,6 +90,8 @@ fun SettingsScreen(
     var resetAppearanceDialog by remember { mutableStateOf(false) }
     var transparencyExpanded by rememberSaveable { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val drawsBehindNavigation = LocalContentDrawsBehindNavigation.current
+    val navigationClearance = bottomPadding.calculateBottomPadding()
 
     Scaffold(
         topBar = {
@@ -112,10 +117,15 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(
                     top = innerPadding.calculateTopPadding(),
-                    bottom = bottomPadding.calculateBottomPadding(),
+                    bottom = if (drawsBehindNavigation) 0.dp else navigationClearance,
                 )
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 24.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                top = 8.dp,
+                end = 16.dp,
+                bottom = 24.dp + if (drawsBehindNavigation) navigationClearance else 0.dp,
+            ),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             if (state.loading) item { LoadingState("正在读取设置…") }
@@ -143,6 +153,18 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                        SegmentedSwitchItem(
+                            title = "玻璃导航栏",
+                            summary = if (appearance.glassNavigationEnabled) {
+                                "使用浮动玻璃导航栏，可实时模糊后方页面"
+                            } else {
+                                "使用 Material 3 原版底部导航栏"
+                            },
+                            icon = Icons.Outlined.BlurOn,
+                            checked = appearance.glassNavigationEnabled,
+                            enabled = true,
+                            onCheckedChange = onGlassNavigationChange,
+                        )
                         SegmentedItem(
                             title = "背景图片",
                             summary = appearance.backgroundUri?.let { backgroundName(it) } ?: "使用纯色背景",
@@ -180,6 +202,13 @@ fun SettingsScreen(
                                     )
                                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                                     TransparencySlider(
+                                        title = "玻璃导航栏透明度",
+                                        value = appearance.glassNavigationTransparency,
+                                        onValueChange = onGlassNavigationTransparencyChange,
+                                        description = "0% 为完全不透明，100% 为完全透明。",
+                                    )
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    TransparencySlider(
                                         title = "控件背景透明度",
                                         value = appearance.controlTransparency,
                                         onValueChange = onControlTransparencyChange,
@@ -211,7 +240,7 @@ fun SettingsScreen(
                         }
                         SegmentedItem(
                             title = "恢复默认外观",
-                            summary = "靛蓝紫、栏位透明度 0%、控件透明度 24%、纯白背景",
+                            summary = "靛蓝紫、玻璃导航栏透明度 50%、控件透明度 24%、纯白背景",
                             icon = Icons.Outlined.Restore,
                             onClick = { resetAppearanceDialog = true },
                             trailing = { Icon(Icons.Outlined.ChevronRight, null) },
@@ -404,6 +433,7 @@ private fun TransparencySlider(
 
 private fun transparencySummary(appearance: AppearanceSettings): String =
     "栏位 ${(appearance.chromeTransparency * 100).roundToInt()}% · " +
+        "玻璃 ${(appearance.glassNavigationTransparency * 100).roundToInt()}% · " +
         "控件 ${(appearance.controlTransparency * 100).roundToInt()}% · " +
         if (appearance.backgroundEnabled) {
             "图片 ${(appearance.backgroundAlpha * 100).roundToInt()}%"
