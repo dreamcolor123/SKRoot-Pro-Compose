@@ -9,7 +9,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 管理器版本：`4.5.4`
-- Compose UI 发布版本：`v4.5.4-compose.8`
+- Compose UI 发布版本：`v4.5.4-compose.9`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -18,7 +18,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 主要内容
 
 - Material 3 Compose 单 Activity 架构
-- 自适应手机底部导航与平板 NavigationRail
+- 默认启用可调透明度的液态玻璃手机底部导航，并可切换回 Material 3 原版导航栏
 - 主页环境状态、Root 命令终端、系统状态卡片
 - SU 授权管理与应用选择器
 - 已安装模块、模块市场、更新和下载进度
@@ -34,7 +34,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - JDK 17
 - Gradle 8.9（使用仓库中的 Gradle Wrapper）
 - Android Gradle Plugin 8.7.3
-- Kotlin 2.0.21
+- Kotlin 2.1.0
 - compileSdk 35 / Build Tools 35.0.0
 - NDK `26.3.11579264`
 - CMake 3.18.1
@@ -86,16 +86,14 @@ app/build/outputs/apk/debug/app-debug.apk
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
-最新公开 Release [v4.5.4-compose.8](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.8) 提供两个 APK：
+最新公开 Release [v4.5.4-compose.9](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.9) 提供签名正式版 APK：
 
-- [`SKRoot Pro` / `com.linux.compose` Release](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.8/SKRoot-Pro-com.linux.compose-v4.5.4-release.apk)
-- [`SKRoot(Pro)` / `com.linux.permissionmanager` Debug](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.8/SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk)
+- [`v4.5.4-compose.9-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.9/v4.5.4-compose.9-UI%E9%87%8D%E6%9E%84%E7%89%88-SKRoot%20Pro.apk)
 
 SHA-256：
 
 ```text
-a5ece669c5a1eaba9a811bd9dcd535d27e7d32e3fb631e0c8d6a1617f6f8689e  SKRoot-Pro-com.linux.compose-v4.5.4-release.apk
-65e7cddd1dda874514653bea570413a646d80447647453aff9a7e1aba35ee1ba  SKRoot-Pro-com.linux.permissionmanager-v4.5.4-debug.apk
+44ebf45f63b3dbb2a84cce22a0cdc4884fe9661b9ab2f6caa3d4061542f5d195  v4.5.4-compose.9-UI重构版-SKRoot Pro.apk
 ```
 
 ## 上游项目与致谢
@@ -140,7 +138,11 @@ base64 -w 0 release.p12 > release.p12.base64
 
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
-工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。
+工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。Release 文件统一命名为 `<版本标签>-UI重构版-<应用名称>.apk`。
+
+### v4.5.4-compose.9 液态玻璃导航栏
+
+手机布局新增默认启用的液态玻璃浮动导航栏，支持在设置中切换 Material 3 原版导航栏，并可独立调节玻璃透明度。玻璃背景使用动态高斯模糊与全分辨率采样，高透明度下会轻微降低模糊强度；滚动细节不再叠加噪点纹理。原版导航栏继续保持不透明，平板 NavigationRail 行为不变。
 
 ### v4.5.4-compose.4 Magica 生命周期修复
 
