@@ -49,7 +49,7 @@ import com.linux.permissionmanager.data.UiEffect
 import com.linux.permissionmanager.ui.*
 import com.linux.permissionmanager.ui.screens.*
 import com.linux.permissionmanager.ui.theme.AppearanceBackground
-import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 import com.linux.permissionmanager.ui.theme.SkpTheme
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.GetAppListPermissionHelper
@@ -400,6 +400,7 @@ private fun SkpApp(
                         onBootFailChange = settingsViewModel::setBootFail,
                         onAdbChange = settingsViewModel::setAdbDisabled,
                         onLogChange = settingsViewModel::setLogEnabled,
+                        onUpdateCheckChange = settingsViewModel::setUpdateCheckEnabled,
                         onBasicTest = settingsViewModel::testBasic,
                         onModuleTest = settingsViewModel::testDefaultModule,
                         onShowLog = settingsViewModel::showLog,
@@ -410,6 +411,7 @@ private fun SkpApp(
                         onPaletteChange = application.container.appearance::setPalette,
                         onPickBackground = onPickBackground,
                         onBackgroundAlphaChange = application.container.appearance::setBackgroundAlpha,
+                        onChromeTransparencyChange = application.container.appearance::setChromeTransparency,
                         onClearBackground = application.container.appearance::clearBackground,
                         onResetAppearance = application.container.appearance::reset,
                         onOpenLocalCustomizer = localCustomizerViewModel::show,
@@ -442,6 +444,7 @@ private fun SkpApp(
             onPackageNameChange = localCustomizerViewModel::setPackageName,
             onManagerNameChange = localCustomizerViewModel::setManagerName,
             onPickIcon = localCustomizerViewModel::requestIcon,
+            onUseDefaultIcon = localCustomizerViewModel::useDefaultIcon,
             onBuildAndInstall = localCustomizerViewModel::buildAndInstall,
             onExport = localCustomizerViewModel::buildAndExport,
         )
@@ -543,7 +546,7 @@ private fun AdaptiveMainScreen(
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail(
                         modifier = Modifier.fillMaxHeight(),
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
                     ) {
                         Column(
                             modifier = Modifier
@@ -584,7 +587,7 @@ private fun AdaptiveMainScreen(
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 bottomBar = {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha)) {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current)) {
                         navigationItems.forEachIndexed { index, item ->
                             NavigationBarItem(
                                 selected = navigationPage == index,

@@ -38,16 +38,14 @@ val LocalSemanticColors = staticCompositionLocalOf {
     )
 }
 
+val LocalChromeSurfaceAlpha = staticCompositionLocalOf { 1f }
+
 object AppearanceTokens {
     // Page surfaces must remain translucent enough for a user-selected image
     // to survive compositing. Cards and navigation stay more opaque so text
     // remains readable over detailed photographs.
     const val pageSurfaceAlpha = 0.38f
     const val cardSurfaceAlpha = 0.76f
-    // Navigation chrome must be opaque. Scrollable page content is laid out
-    // behind collapsing app bars and the bottom navigation surface; allowing
-    // the chrome to be translucent makes two text layers visually overlap.
-    const val navigationSurfaceAlpha = 1f
     const val dialogSurfaceAlpha = 0.98f
 }
 
@@ -142,7 +140,10 @@ fun SkpTheme(
         }
     }
 
-    CompositionLocalProvider(LocalSemanticColors provides LightSemanticColors) {
+    CompositionLocalProvider(
+        LocalSemanticColors provides LightSemanticColors,
+        LocalChromeSurfaceAlpha provides appearance.chromeSurfaceAlpha,
+    ) {
         MaterialTheme(colorScheme = scheme, content = content)
     }
 }

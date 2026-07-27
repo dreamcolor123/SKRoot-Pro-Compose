@@ -19,6 +19,8 @@ import com.linux.permissionmanager.data.PaletteId
 import com.linux.permissionmanager.ui.SettingsUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
+import kotlin.math.roundToInt
 
 private data class Choice(val title: String, val value: String)
 private data class RebootChoice(val title: String, val command: String? = null, val soft: Boolean = false)
@@ -56,6 +58,7 @@ fun SettingsScreen(
     onBootFailChange: (Boolean) -> Unit,
     onAdbChange: (Boolean) -> Unit,
     onLogChange: (Boolean) -> Unit,
+    onUpdateCheckChange: (Boolean) -> Unit,
     onBasicTest: (String) -> Unit,
     onModuleTest: (String) -> Unit,
     onShowLog: () -> Unit,
@@ -66,6 +69,7 @@ fun SettingsScreen(
     onPaletteChange: (PaletteId) -> Unit,
     onPickBackground: () -> Unit,
     onBackgroundAlphaChange: (Float) -> Unit,
+    onChromeTransparencyChange: (Float) -> Unit,
     onClearBackground: () -> Unit,
     onResetAppearance: () -> Unit,
     onOpenLocalCustomizer: () -> Unit,
@@ -90,16 +94,22 @@ fun SettingsScreen(
                 actions = { IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, "刷新") } },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
                 ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-            contentPadding = PaddingValues(16.dp, innerPadding.calculateTopPadding() + 8.dp, 16.dp, bottomPadding.calculateBottomPadding() + 24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = bottomPadding.calculateBottomPadding(),
+                )
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
+            contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             if (state.loading) item { LoadingState("正在读取设置…") }
@@ -127,6 +137,23 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("导航栏与标题栏透明度", style = MaterialTheme.typography.bodyMedium)
+                                Text("${(appearance.chromeTransparency * 100).roundToInt()}%", color = MaterialTheme.colorScheme.primary)
+                            }
+                            Slider(
+                                value = appearance.chromeTransparency,
+                                onValueChange = onChromeTransparencyChange,
+                                valueRange = 0f..1f,
+                                steps = 19,
+                            )
+                            Text(
+                                "0% 为不透明，100% 为完全透明；内容区域会避开栏位以防文字重叠。",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         SegmentedItem(
                             title = "背景图片",
                             summary = appearance.backgroundUri?.let { backgroundName(it) } ?: "使用纯色背景",
@@ -138,16 +165,16 @@ fun SettingsScreen(
                             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text("背景透明度", style = MaterialTheme.typography.bodyMedium)
-                                    Text("${(appearance.backgroundAlpha * 100).toInt()}%", color = MaterialTheme.colorScheme.primary)
+                                    Text("${(appearance.backgroundAlpha * 100).roundToInt()}%", color = MaterialTheme.colorScheme.primary)
                                 }
                                 Slider(
                                     value = appearance.backgroundAlpha,
                                     onValueChange = onBackgroundAlphaChange,
-                                    valueRange = 0f..0.6f,
-                                    steps = 11,
+                                    valueRange = 0f..1f,
+                                    steps = 19,
                                 )
                                 Text(
-                                    "透明度越高，图片越明显；页面会保留浅色遮罩以保证可读性。",
+                                    "支持 0%–100%；数值越高，背景图片越明显。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -162,7 +189,7 @@ fun SettingsScreen(
                         }
                         SegmentedItem(
                             title = "恢复默认外观",
-                            summary = "靛蓝紫、纯白背景、关闭自定义图片",
+                            summary = "靛蓝紫、栏位透明度 0%、纯白背景",
                             icon = Icons.Outlined.Restore,
                             onClick = { resetAppearanceDialog = true },
                             trailing = { Icon(Icons.Outlined.ChevronRight, null) },
@@ -241,6 +268,14 @@ fun SettingsScreen(
                 }
                 item {
                     SegmentedGroup("更新与关于") {
+                        SegmentedSwitchItem(
+                            title = "检测管理器更新",
+                            summary = "启用后联网检查管理器版本；默认关闭",
+                            icon = Icons.Outlined.SystemUpdate,
+                            checked = state.updateCheckEnabled,
+                            enabled = state.busyItem == null,
+                            onCheckedChange = onUpdateCheckChange,
+                        )
                         SegmentedItem("内置核心版本", state.sdkVersion, Icons.Outlined.Memory)
                         SegmentedItem("SKRoot 模块开发指南", "PDF 文档", Icons.Outlined.MenuBook, onClick = { onOpenUrl("https://abcz316.github.io/SKRoot-linuxKernelRoot/skroot_pro_app/module_developer_help.pdf") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
                         SegmentedItem("GitHub", "github.com/abcz316/SKRoot-linuxKernelRoot", Icons.Outlined.Code, onClick = { onOpenUrl("https://github.com/abcz316/SKRoot-linuxKernelRoot") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })

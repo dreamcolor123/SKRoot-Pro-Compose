@@ -26,7 +26,8 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - Root Key、Boot / 热启动配置和重启选项
 - 设备内本地定制管理器：自定义包名、名称和图标后直接导出或安装 APK
 - `StateFlow` UI 状态、`SharedFlow` 一次性事件和 Repository 数据层
-- 浅色/深色主题、动态强调色和纯白浅色背景
+- 五套浅色配色、自定义背景、导航栏与标题栏透明度
+- 可选的管理器更新检测，默认关闭
 
 ## 构建环境
 

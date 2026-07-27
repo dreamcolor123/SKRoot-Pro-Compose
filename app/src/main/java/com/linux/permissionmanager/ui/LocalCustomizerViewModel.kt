@@ -23,6 +23,8 @@ data class LocalCustomizerUiState(
     val visible: Boolean = false,
     val packageName: String = "",
     val managerName: String = "",
+    val defaultPackageName: String = "com.example.manager",
+    val defaultManagerName: String = "SKRoot Pro",
     val iconUri: Uri? = null,
     val packageError: String? = null,
     val signatureConflict: String? = null,
@@ -32,8 +34,10 @@ data class LocalCustomizerUiState(
     val error: String? = null,
     val artifact: CustomBuildArtifact? = null,
 ) {
+    val effectivePackageName: String get() = packageName.trim().ifBlank { defaultPackageName }
+    val effectiveManagerName: String get() = managerName.trim().ifBlank { defaultManagerName }
     val canBuild: Boolean get() =
-        !building && !checkingPackage && packageError == null && packageName.isNotBlank() && managerName.isNotBlank() && iconUri != null
+        !building && !checkingPackage && packageError == null
     val canInstall: Boolean get() = canBuild && signatureConflict == null
 }
 
@@ -43,11 +47,11 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
     private val defaultName = runCatching {
         app.packageManager.getApplicationLabel(app.applicationInfo).toString()
     }.getOrDefault("SKRoot Pro")
+    private val defaultPackageName = "${app.packageName}.custom"
     private val mutableState = MutableStateFlow(
         LocalCustomizerUiState(
-            packageName = "${app.packageName}.custom",
-            managerName = defaultName,
-            packageError = PackageNameValidator.error("${app.packageName}.custom"),
+            defaultPackageName = defaultPackageName,
+            defaultManagerName = defaultName,
         )
     )
     val state: StateFlow<LocalCustomizerUiState> = mutableState.asStateFlow()
@@ -72,7 +76,8 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
     }
 
     fun setPackageName(value: String) {
-        val syntaxError = PackageNameValidator.error(value)
+        val normalized = value.trim()
+        val syntaxError = if (normalized.isBlank()) null else PackageNameValidator.error(normalized)
         mutableState.update {
             it.copy(
                 packageName = value,
@@ -97,6 +102,15 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
             app.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         mutableState.update { it.copy(iconUri = uri, error = null, artifact = null) }
+    }
+
+    fun useDefaultIcon() {
+        mutableState.value.iconUri?.let { uri ->
+            runCatching {
+                app.contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
+        mutableState.update { it.copy(iconUri = null, error = null, artifact = null) }
     }
 
     fun buildAndExport() = build(install = false)
@@ -128,14 +142,15 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
         buildJob?.cancel()
         buildJob = viewModelScope.launch {
             val input = mutableState.value
-            val icon = input.iconUri ?: return@launch
+            val packageName = input.effectivePackageName
+            val managerName = input.effectiveManagerName
             mutableState.update { it.copy(building = true, stage = CustomBuildStage.PREPARING, error = null, artifact = null) }
             try {
-                if (install && repository.installedSignatureConflict(input.packageName)) {
+                if (install && repository.installedSignatureConflict(packageName)) {
                     error("设备中已安装同包名应用，但签名与本地定制身份不同；请更换包名或先卸载原应用")
                 }
                 val artifact = repository.build(
-                    CustomBuildRequest(input.packageName, input.managerName.trim(), icon),
+                    CustomBuildRequest(packageName, managerName, input.iconUri),
                 ) { stage -> mutableState.update { it.copy(stage = stage) } }
                 if (install) {
                     mutableState.update { it.copy(building = true, stage = CustomBuildStage.INSTALLING, artifact = artifact) }
@@ -159,11 +174,17 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
         }
     }
 
-    private fun scheduleSignatureCheck(packageName: String) {
+    private fun scheduleSignatureCheck(packageInput: String) {
         packageCheckJob?.cancel()
+        val packageName = packageInput.trim().ifBlank { defaultPackageName }
         if (PackageNameValidator.error(packageName) != null || !mutableState.value.visible) {
             mutableState.update { it.copy(checkingPackage = false, signatureConflict = null) }
             return
+        }
+        mutableState.update { current ->
+            if (current.effectivePackageName == packageName) {
+                current.copy(checkingPackage = true, signatureConflict = null)
+            } else current
         }
         packageCheckJob = viewModelScope.launch {
             delay(250)
@@ -175,7 +196,7 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
                 false
             }
             mutableState.update { current ->
-                if (current.packageName != packageName) current else current.copy(
+                if (current.effectivePackageName != packageName) current else current.copy(
                     checkingPackage = false,
                     signatureConflict = if (conflict) {
                         "设备中已安装同包名应用，但签名不同；仍可导出 APK，安装前需更换包名或卸载原应用"

@@ -52,7 +52,7 @@ enum class CustomBuildStage(val label: String, val progress: Float) {
 data class CustomBuildRequest(
     val packageName: String,
     val managerName: String,
-    val iconUri: Uri,
+    val iconUri: Uri? = null,
 )
 
 data class CustomBuildArtifact(
@@ -114,11 +114,14 @@ class LocalCustomizerRepository(private val context: Context) {
             coroutineContext.ensureActive()
 
             onStage(CustomBuildStage.ICONS)
-            val icon = decodeIcon(request.iconUri)
-            val replacements = try {
-                generateIconEntries(icon).toMutableMap()
-            } finally {
-                icon.recycle()
+            val replacements = mutableMapOf<String, ByteArray>()
+            request.iconUri?.let { iconUri ->
+                val icon = decodeIcon(iconUri)
+                try {
+                    replacements.putAll(generateIconEntries(icon))
+                } finally {
+                    icon.recycle()
+                }
             }
             replacements["AndroidManifest.xml"] = editedManifest.bytes
             coroutineContext.ensureActive()

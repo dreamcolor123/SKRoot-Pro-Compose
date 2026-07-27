@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.drawable.toBitmap
 import com.linux.permissionmanager.customizer.CustomBuildStage
 import com.linux.permissionmanager.ui.LocalCustomizerUiState
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,7 @@ fun LocalCustomizerDialog(
     onPackageNameChange: (String) -> Unit,
     onManagerNameChange: (String) -> Unit,
     onPickIcon: () -> Unit,
+    onUseDefaultIcon: () -> Unit,
     onBuildAndInstall: () -> Unit,
     onExport: () -> Unit,
 ) {
@@ -69,13 +71,14 @@ fun LocalCustomizerDialog(
 
                 val packageSupport = state.packageError
                     ?: state.signatureConflict
-                    ?: if (state.checkingPackage) "正在检查已安装应用…" else null
+                    ?: if (state.checkingPackage) "正在检查已安装应用…"
+                    else if (state.packageName.isBlank()) "留空使用默认包名：${state.defaultPackageName}" else null
                 OutlinedTextField(
                     value = state.packageName,
                     onValueChange = onPackageNameChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("包名") },
-                    placeholder = { Text("com.example.manager") },
+                    placeholder = { Text(state.defaultPackageName) },
                     singleLine = true,
                     enabled = !state.building,
                     isError = state.packageError != null || state.signatureConflict != null,
@@ -86,8 +89,10 @@ fun LocalCustomizerDialog(
                     onValueChange = onManagerNameChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("管理器名称") },
+                    placeholder = { Text(state.defaultManagerName) },
                     singleLine = true,
                     enabled = !state.building,
+                    supportingText = { Text("留空使用默认名称：${state.defaultManagerName}") },
                 )
 
                 Surface(
@@ -103,7 +108,7 @@ fun LocalCustomizerDialog(
                         Column(Modifier.weight(1f)) {
                             Text("本地图标", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                if (state.iconUri == null) "请选择 PNG、JPG 或 WebP 图片" else "已选择图标",
+                                if (state.iconUri == null) "未选择时沿用当前应用图标" else "已选择自定义图标",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -111,9 +116,16 @@ fun LocalCustomizerDialog(
                         OutlinedButton(onClick = onPickIcon, enabled = !state.building) {
                             Icon(Icons.Outlined.Image, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("选择")
+                            Text(if (state.iconUri == null) "选择" else "更换")
                         }
                     }
+                }
+                if (state.iconUri != null) {
+                    TextButton(
+                        onClick = onUseDefaultIcon,
+                        enabled = !state.building,
+                        modifier = Modifier.align(Alignment.End),
+                    ) { Text("使用默认图标") }
                 }
 
                 if (state.stage != CustomBuildStage.IDLE || state.building || state.error != null) {
@@ -157,6 +169,9 @@ fun LocalCustomizerDialog(
 @Composable
 private fun CustomIconPreview(uri: Uri?, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val defaultBitmap = remember(context.packageName) {
+        runCatching { context.packageManager.getApplicationIcon(context.packageName).toBitmap(256, 256) }.getOrNull()
+    }
     var bitmap by remember(uri) { mutableStateOf<android.graphics.Bitmap?>(null) }
     LaunchedEffect(uri) {
         bitmap = if (uri == null) null else withContext(Dispatchers.IO) {
@@ -179,7 +194,8 @@ private fun CustomIconPreview(uri: Uri?, modifier: Modifier = Modifier) {
         }
     }
     val shape = RoundedCornerShape(18.dp)
-    if (bitmap == null) {
+    val preview = bitmap ?: defaultBitmap
+    if (preview == null) {
         Box(
             modifier.clip(shape).background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
@@ -188,8 +204,8 @@ private fun CustomIconPreview(uri: Uri?, modifier: Modifier = Modifier) {
         }
     } else {
         Image(
-            bitmap = bitmap!!.asImageBitmap(),
-            contentDescription = "定制图标预览",
+            bitmap = preview.asImageBitmap(),
+            contentDescription = if (uri == null) "默认应用图标预览" else "定制图标预览",
             modifier = modifier.clip(shape),
             contentScale = ContentScale.Crop,
         )

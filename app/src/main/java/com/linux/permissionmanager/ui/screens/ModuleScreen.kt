@@ -22,6 +22,7 @@ import com.linux.permissionmanager.ui.ModuleUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.LocalSemanticColors
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 
 private val ModuleActionIconSize = 18.dp
 private val ModuleMenuIconSize = 20.dp
@@ -91,11 +92,11 @@ fun ModuleScreen(
                     },
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
-                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
                     ),
                 )
-                PrimaryTabRow(selectedTabIndex = state.selectedTab, containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha)) {
+                PrimaryTabRow(selectedTabIndex = state.selectedTab, containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current)) {
                     Tab(
                         selected = state.selectedTab == 0,
                         onClick = { onSelectTab(0) },
@@ -187,8 +188,14 @@ private fun InstalledModules(
     onUpdate: (InstalledModule) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(16.dp, innerPadding.calculateTopPadding() + 12.dp, 16.dp, bottomPadding.calculateBottomPadding() + 20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = innerPadding.calculateTopPadding(),
+                bottom = bottomPadding.calculateBottomPadding(),
+            )
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (state.installedLoading) item { LoadingState("正在读取已安装模块…") }
@@ -269,8 +276,14 @@ private fun MarketModules(
     onOpenUrl: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(16.dp, innerPadding.calculateTopPadding() + 12.dp, 16.dp, bottomPadding.calculateBottomPadding() + 20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(
+                top = innerPadding.calculateTopPadding(),
+                bottom = bottomPadding.calculateBottomPadding(),
+            )
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {

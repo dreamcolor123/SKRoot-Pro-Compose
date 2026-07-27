@@ -41,8 +41,10 @@ data class AppearanceSettings(
     val palette: PaletteId = PaletteId.INDIGO,
     val backgroundUri: String? = null,
     val backgroundAlpha: Float = 0.28f,
+    val chromeTransparency: Float = 0f,
 ) {
     val backgroundEnabled: Boolean get() = !backgroundUri.isNullOrBlank()
+    val chromeSurfaceAlpha: Float get() = (1f - chromeTransparency).coerceIn(0f, 1f)
 }
 
 class AppearanceStore(private val context: Context) {
@@ -79,7 +81,11 @@ class AppearanceStore(private val context: Context) {
     }
 
     fun setBackgroundAlpha(value: Float) {
-        update(mutableState.value.copy(backgroundAlpha = value.coerceIn(0f, 0.6f)))
+        update(mutableState.value.copy(backgroundAlpha = value.coerceIn(0f, 1f)))
+    }
+
+    fun setChromeTransparency(value: Float) {
+        update(mutableState.value.copy(chromeTransparency = value.coerceIn(0f, 1f)))
     }
 
     fun reset() {
@@ -91,7 +97,9 @@ class AppearanceStore(private val context: Context) {
         palette = PaletteId.fromKey(AppSettings.getString(AppSettings.KEY_APPEARANCE_PALETTE, PaletteId.INDIGO.key)),
         backgroundUri = AppSettings.getString(AppSettings.KEY_APPEARANCE_BACKGROUND_URI, "").ifBlank { null },
         backgroundAlpha = AppSettings.getString(AppSettings.KEY_APPEARANCE_BACKGROUND_ALPHA, "0.28")
-            .toFloatOrNull()?.coerceIn(0f, 0.6f) ?: 0.28f,
+            .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0.28f,
+        chromeTransparency = AppSettings.getString(AppSettings.KEY_APPEARANCE_CHROME_TRANSPARENCY, "0")
+            .toFloatOrNull()?.coerceIn(0f, 1f) ?: 0f,
     )
 
     private fun update(value: AppearanceSettings) {
@@ -99,5 +107,6 @@ class AppearanceStore(private val context: Context) {
         AppSettings.setString(AppSettings.KEY_APPEARANCE_PALETTE, value.palette.key)
         AppSettings.setString(AppSettings.KEY_APPEARANCE_BACKGROUND_URI, value.backgroundUri.orEmpty())
         AppSettings.setString(AppSettings.KEY_APPEARANCE_BACKGROUND_ALPHA, value.backgroundAlpha.toString())
+        AppSettings.setString(AppSettings.KEY_APPEARANCE_CHROME_TRANSPARENCY, value.chromeTransparency.toString())
     }
 }

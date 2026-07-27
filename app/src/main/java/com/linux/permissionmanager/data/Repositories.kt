@@ -51,6 +51,9 @@ class SettingsStore {
     var lastRootCommand: String
         get() = AppSettings.getString("lastInputCmd", "id")
         set(value) = AppSettings.setString("lastInputCmd", value)
+    var managerUpdateCheckEnabled: Boolean
+        get() = AppSettings.getBoolean(AppSettings.KEY_MANAGER_UPDATE_CHECK_ENABLED, false)
+        set(value) = AppSettings.setBoolean(AppSettings.KEY_MANAGER_UPDATE_CHECK_ENABLED, value)
 
     fun getString(key: String, fallback: String = "") = AppSettings.getString(key, fallback)
     fun putString(key: String, value: String) = AppSettings.setString(key, value)

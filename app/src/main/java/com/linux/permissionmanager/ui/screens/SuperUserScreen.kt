@@ -19,6 +19,7 @@ import com.linux.permissionmanager.data.SuGrant
 import com.linux.permissionmanager.ui.SuperUserUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,19 +78,25 @@ fun SuperUserScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.navigationSurfaceAlpha),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
                 ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = bottomPadding.calculateBottomPadding(),
+                )
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = PaddingValues(
                 start = 16.dp, end = 16.dp,
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = bottomPadding.calculateBottomPadding() + 20.dp,
+                top = 8.dp,
+                bottom = 20.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {

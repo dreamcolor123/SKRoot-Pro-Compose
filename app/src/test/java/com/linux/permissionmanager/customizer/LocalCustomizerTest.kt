@@ -6,12 +6,28 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import com.linux.permissionmanager.ui.LocalCustomizerUiState
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class LocalCustomizerTest {
+    @Test
+    fun incompleteCustomizerInputUsesDefaultsAndCanBuild() {
+        val state = LocalCustomizerUiState(
+            defaultPackageName = "com.example.defaultmanager",
+            defaultManagerName = "Default Manager",
+        )
+        assertEquals("com.example.defaultmanager", state.effectivePackageName)
+        assertEquals("Default Manager", state.effectiveManagerName)
+        assertTrue(state.canBuild)
+
+        val customized = state.copy(packageName = " com.example.custom ", managerName = " Custom ")
+        assertEquals("com.example.custom", customized.effectivePackageName)
+        assertEquals("Custom", customized.effectiveManagerName)
+    }
+
     @Test
     fun packageNameValidationFollowsApplicationIdRules() {
         assertNull(PackageNameValidator.error("com.example.manager"))

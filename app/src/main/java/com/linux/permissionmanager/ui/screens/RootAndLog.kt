@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.linux.permissionmanager.ui.RootConfigUiState
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
+import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 
 data class RebootOption(
     val title: String,
@@ -173,6 +174,10 @@ fun LogScreen(
                     IconButton(onClick = onCopy) { Icon(Icons.Outlined.ContentCopy, "复制") }
                     IconButton(onClick = onExport) { Icon(Icons.Outlined.SaveAlt, "导出") }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = LocalChromeSurfaceAlpha.current),
+                ),
             )
         },
         containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = AppearanceTokens.pageSurfaceAlpha),

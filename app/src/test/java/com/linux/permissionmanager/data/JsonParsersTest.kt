@@ -1,5 +1,6 @@
 package com.linux.permissionmanager.data
 
+import com.linux.permissionmanager.ui.SettingsUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -109,7 +110,15 @@ class JsonParsersTest {
         assertNull(appearance.backgroundUri)
         assertFalse(appearance.backgroundEnabled)
         assertEquals(0.28f, appearance.backgroundAlpha, 0.0001f)
+        assertEquals(0f, appearance.chromeTransparency, 0.0001f)
+        assertEquals(1f, appearance.chromeSurfaceAlpha, 0.0001f)
+        assertEquals(0f, appearance.copy(chromeTransparency = 1f).chromeSurfaceAlpha, 0.0001f)
         assertEquals(5, PaletteId.values().size)
+    }
+
+    @Test
+    fun managerUpdateDetectionDefaultsToDisabled() {
+        assertFalse(SettingsUiState().updateCheckEnabled)
     }
 
     @Test

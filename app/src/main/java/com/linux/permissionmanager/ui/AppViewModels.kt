@@ -635,6 +635,7 @@ data class SettingsUiState(
     val adbForcedDisabled: Boolean = false,
     val logEnabled: Boolean = false,
     val sdkVersion: String = "-",
+    val updateCheckEnabled: Boolean = false,
     val update: AppUpdate? = null,
     val busyItem: String? = null,
     val error: String? = null,
@@ -643,11 +644,13 @@ data class SettingsUiState(
 class SettingsViewModel(private val app: PermissionManagerApplication) : ViewModel() {
     private val native = app.container.native
     private val updates = app.container.updates
+    private val settings = app.container.settings
     private val events = app.container.events
     private val mutableState = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = mutableState.asStateFlow()
     private var key = ""
     private var refreshJob: Job? = null
+    private var updateToggleJob: Job? = null
     private var refreshRequestId = 0L
 
     fun setRootKey(value: String) { if (value != key || mutableState.value.loading) { key = value; refresh() } }
@@ -656,8 +659,16 @@ class SettingsViewModel(private val app: PermissionManagerApplication) : ViewMod
         val requestKey = key
         val requestId = ++refreshRequestId
         refreshJob?.cancel()
+        updateToggleJob?.cancel()
         refreshJob = viewModelScope.launch {
             mutableState.update { it.copy(loading = true, error = null) }
+            val updateCheckEnabled = settings.managerUpdateCheckEnabled
+            mutableState.update {
+                it.copy(
+                    updateCheckEnabled = updateCheckEnabled,
+                    update = if (updateCheckEnabled) updates.cached() else null,
+                )
+            }
             runCatching {
                 SettingsUiState(
                     loading = false,
@@ -665,7 +676,8 @@ class SettingsViewModel(private val app: PermissionManagerApplication) : ViewMod
                     adbForcedDisabled = native.adbForcedDisabled(requestKey),
                     logEnabled = native.logEnabled(requestKey),
                     sdkVersion = native.sdkVersion(),
-                    update = updates.cached(),
+                    updateCheckEnabled = updateCheckEnabled,
+                    update = if (updateCheckEnabled) updates.cached() else null,
                 )
             }.onSuccess { state ->
                 if (requestId != refreshRequestId || requestKey != key) return@onSuccess
@@ -674,9 +686,9 @@ class SettingsViewModel(private val app: PermissionManagerApplication) : ViewMod
                 if (error is CancellationException || requestId != refreshRequestId || requestKey != key) return@onFailure
                 mutableState.update { state -> state.copy(loading = false, error = error.message ?: "设置读取失败") }
             }
-            if (requestId == refreshRequestId && requestKey == key) {
+            if (updateCheckEnabled && requestId == refreshRequestId && requestKey == key) {
                 runCatching { updates.refresh() }.onSuccess { update ->
-                    if (requestId == refreshRequestId && requestKey == key) {
+                    if (requestId == refreshRequestId && requestKey == key && settings.managerUpdateCheckEnabled) {
                         mutableState.update { it.copy(update = update) }
                     }
                 }
@@ -699,6 +711,34 @@ class SettingsViewModel(private val app: PermissionManagerApplication) : ViewMod
         call = { native.setLogEnabled(key, enabled) },
         updateState = { mutableState.update { it.copy(logEnabled = enabled) } },
     )
+
+    fun setUpdateCheckEnabled(enabled: Boolean) {
+        // The settings UI is available after native settings have loaded, so
+        // cancelling here only stops a possible in-flight manager update request.
+        refreshJob?.cancel()
+        updateToggleJob?.cancel()
+        settings.managerUpdateCheckEnabled = enabled
+        mutableState.update {
+            it.copy(
+                updateCheckEnabled = enabled,
+                update = if (enabled) updates.cached() else null,
+            )
+        }
+        events.emit(UiEffect.Snackbar(if (enabled) "已启用管理器更新检测" else "已关闭管理器更新检测"))
+        if (enabled) {
+            updateToggleJob = viewModelScope.launch {
+                runCatching { updates.refresh() }
+                    .onSuccess { update ->
+                        if (settings.managerUpdateCheckEnabled) mutableState.update { it.copy(update = update) }
+                    }
+                    .onFailure {
+                        if (it !is CancellationException) {
+                            events.emit(UiEffect.Snackbar("检查管理器更新失败：${it.message ?: "unknown"}"))
+                        }
+                    }
+            }
+        }
+    }
 
     fun testBasic(item: String) = viewModelScope.launch {
         val result = runCatching { native.testBasics(key, item) }.getOrElse { "ERROR: ${it.message}" }

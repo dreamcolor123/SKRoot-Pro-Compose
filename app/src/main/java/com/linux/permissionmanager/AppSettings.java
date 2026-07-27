@@ -12,6 +12,8 @@ public class AppSettings {
     public static final String KEY_APPEARANCE_PALETTE = "appearance_palette";
     public static final String KEY_APPEARANCE_BACKGROUND_URI = "appearance_background_uri";
     public static final String KEY_APPEARANCE_BACKGROUND_ALPHA = "appearance_background_alpha";
+    public static final String KEY_APPEARANCE_CHROME_TRANSPARENCY = "appearance_chrome_transparency";
+    public static final String KEY_MANAGER_UPDATE_CHECK_ENABLED = "manager_update_check_enabled";
     private static SharedPreferences preferences;
 
     public static void init(Context context) {
