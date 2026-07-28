@@ -9,8 +9,8 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 上游核心版本：`4.5.4`
-- 当前应用版本：`4.5.4.10`
-- UI 修订号：`10`
+- 当前应用版本：`4.5.4.11`
+- UI 修订号：`11`
 - 最新公开版本：`v4.5.4.10`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
@@ -33,7 +33,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 版本与发布规则
 
-应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.10`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.11`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
 
 新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
 
@@ -95,7 +95,7 @@ app/build/outputs/apk/debug/app-debug.apk
 正式版构建会直接生成：
 
 ```text
-app/build/outputs/apk/release/v4.5.4.10-UI重构版-SKRoot Pro.apk
+app/build/outputs/apk/release/v4.5.4.11-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
