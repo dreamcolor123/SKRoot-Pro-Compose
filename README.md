@@ -9,9 +9,9 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 ## 当前版本
 
 - 上游核心版本：`4.5.4`
-- 当前应用版本：`4.5.4.11`
-- UI 修订号：`11`
-- 最新公开版本：`v4.5.4.11`
+- 当前应用版本：`4.5.4.12`
+- UI 修订号：`12`
+- 最新公开版本：`v4.5.4.12`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -33,7 +33,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 版本与发布规则
 
-应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.11`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.12`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
 
 新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
 
@@ -95,7 +95,7 @@ app/build/outputs/apk/debug/app-debug.apk
 正式版构建会直接生成：
 
 ```text
-app/build/outputs/apk/release/v4.5.4.11-UI重构版-SKRoot Pro.apk
+app/build/outputs/apk/release/v4.5.4.12-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
@@ -112,14 +112,14 @@ app/build/outputs/apk/release/v4.5.4.11-UI重构版-SKRoot Pro.apk
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
-最新公开 Release [v4.5.4.11](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4.11) 提供签名正式版 APK：
+最新公开 Release [v4.5.4.12](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4.12) 提供签名正式版 APK：
 
-- [`v4.5.4.11-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4.11/v4.5.4.11-UI-SKRoot-Pro.apk)
+- [`v4.5.4.12-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4.12/v4.5.4.12-UI-SKRoot-Pro.apk)
 
 SHA-256：
 
 ```text
-c8afe1b9a2760133e2588195787a17255a5dc164a5f1328261401fd0b43d5e54  v4.5.4.11-UI重构版-SKRoot Pro.apk
+628f8acbcd6ba31037739ad3ae49ba0aa8e08b78ae0e8d3b137f7cf9ac9503d3  v4.5.4.12-UI重构版-SKRoot Pro.apk
 ```
 
 ## 上游项目与致谢
@@ -165,6 +165,13 @@ base64 -w 0 release.p12 > release.p12.base64
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
+
+### v4.5.4.12 WebUI 快捷方式兼容修复
+
+- 修复从桌面快捷方式打开隐蔽终端等 WebUI 模块时显示“异常”的问题。
+- 避免管理器与 Native Loader 重复打开同一 WebUI 地址；浏览器跳转继续由上游 Native Loader 负责。
+- 快捷方式轻量路由在 WebUI 使用期间维持 Loader 父进程，且仍不会出现在最近任务中。
+- WebUI 本地端口停止后自动清理隐藏路由任务，普通模块页面的 WebUI 按钮同步使用相同的单次启动流程。
 
 ### v4.5.4.11 快捷方式隐私与定制输入修复
 
