@@ -44,6 +44,16 @@ internal fun synchronizeImeTextFieldValue(
     )
 }
 
+internal fun sanitizePackageTextFieldValue(value: TextFieldValue): TextFieldValue = TextFieldValue(
+    // Package names are plain ASCII identifiers. Rebuilding from String removes foreground
+    // colors and other spans attached by clipboard/quick-phrase implementations.
+    text = value.text,
+    selection = value.selection,
+    // Some IMEs submit clipboard phrases as composing text. Committing it here prevents a
+    // stale IME-owned composition style from making otherwise valid pasted text invisible.
+    composition = null,
+)
+
 @Composable
 fun LocalCustomizerDialog(
     state: LocalCustomizerUiState,
@@ -107,13 +117,15 @@ fun LocalCustomizerDialog(
                 OutlinedTextField(
                     value = packageField,
                     onValueChange = { value ->
-                        packageField = value
-                        onPackageNameChange(value.text)
+                        val plainValue = sanitizePackageTextFieldValue(value)
+                        packageField = plainValue
+                        onPackageNameChange(plainValue.text)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("包名") },
                     placeholder = { Text(state.defaultPackageName) },
                     singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
                     enabled = !state.building,
                     isError = state.packageError != null || state.signatureConflict != null,
                     supportingText = packageSupport?.let { message -> { Text(message) } },

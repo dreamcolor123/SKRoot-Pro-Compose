@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+internal const val DEFAULT_CUSTOM_PACKAGE_NAME = "com.example.pro"
+
 data class LocalCustomizerUiState(
     val visible: Boolean = false,
     val packageName: String = "",
@@ -47,7 +49,7 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
     private val defaultName = runCatching {
         app.packageManager.getApplicationLabel(app.applicationInfo).toString()
     }.getOrDefault("SKRoot Pro")
-    private val defaultPackageName = "${app.packageName}.custom"
+    private val defaultPackageName = DEFAULT_CUSTOM_PACKAGE_NAME
     private val mutableState = MutableStateFlow(
         LocalCustomizerUiState(
             defaultPackageName = defaultPackageName,
