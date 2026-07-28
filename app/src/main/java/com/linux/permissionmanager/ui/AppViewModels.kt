@@ -13,7 +13,10 @@ import com.linux.permissionmanager.data.*
 import com.linux.permissionmanager.helper.MagicaRootHelper
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.NetUtils
+import com.linux.permissionmanager.utils.ModuleWebUiShortcutRequest
 import com.linux.permissionmanager.utils.ShellUtils
+import com.linux.permissionmanager.utils.looksLikeRootKeyFailure
+import com.linux.permissionmanager.utils.moduleWebUiUrl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -213,24 +216,6 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
         val pattern = Regex("(?m)^\\s*#.*?\\b${Regex.escape(key)}\\s*=\\s*(\\S+)")
         return pattern.find(text)?.groupValues?.getOrNull(1)?.trim().orEmpty()
     }
-}
-
-/** Detect explicit key errors without treating a normal uninstalled state as a bad key. */
-private fun looksLikeRootKeyFailure(message: String?): Boolean {
-    val value = message?.lowercase(Locale.ROOT).orEmpty()
-    if (value.isBlank()) return false
-    return listOf(
-        "invalid root key",
-        "invalid rootkey",
-        "root key invalid",
-        "wrong root key",
-        "bad root key",
-        "rootkey_invalid",
-        "invalid_key",
-        "invalid key",
-        "permission denied",
-        "unauthorized",
-    ).any(value::contains)
 }
 
 data class HomeUiState(
@@ -536,8 +521,25 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
     }
 
     fun remove(module: InstalledModule) = mutate({ repository.remove(key, module) }) { refreshInstalled() }
-    fun openWebUi(module: InstalledModule) = mutate({ repository.openWebUi(key, module) })
-    fun requestWebUiShortcut(module: InstalledModule) = events.emit(UiEffect.PinModuleWebUiShortcut(module))
+    fun openWebUi(module: InstalledModule) = viewModelScope.launch {
+        mutableState.update { it.copy(busy = true) }
+        runCatching { repository.openWebUi(key, module) }
+            .onSuccess { result ->
+                val url = moduleWebUiUrl(result)
+                when {
+                    looksLikeRootKeyFailure(result) -> events.emit(UiEffect.ShowRootConfig)
+                    url != null -> events.emit(UiEffect.OpenUrl(url))
+                    else -> events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
+                }
+            }
+            .onFailure { error ->
+                if (looksLikeRootKeyFailure(error.message)) events.emit(UiEffect.ShowRootConfig)
+                else events.emit(UiEffect.Snackbar(error.message ?: "打开模块 WebUI 失败"))
+            }
+        mutableState.update { it.copy(busy = false) }
+    }
+    fun requestWebUiShortcut(request: ModuleWebUiShortcutRequest) =
+        events.emit(UiEffect.PinModuleWebUiShortcut(request))
 
     fun openWebUiShortcut(moduleId: String, rootKey: String) {
         val normalizedId = moduleId.trim()
@@ -567,7 +569,9 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                         events.emit(UiEffect.ShowRootConfig)
                     } else {
                         pendingShortcutModuleId = null
-                        events.emit(UiEffect.Snackbar(result.ifBlank { "正在打开模块 WebUI" }))
+                        val url = moduleWebUiUrl(result)
+                        if (url != null) events.emit(UiEffect.OpenUrl(url))
+                        else events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
                     }
                 }
                 .onFailure { error ->

@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -73,9 +75,33 @@ fun LocalCustomizerDialog(
                     ?: state.signatureConflict
                     ?: if (state.checkingPackage) "正在检查已安装应用…"
                     else if (state.packageName.isBlank()) "留空使用默认包名：${state.defaultPackageName}" else null
+                // Keep the editable buffer local so IME composition, quick phrases and
+                // clipboard commits are reflected in the same frame. Round-tripping the
+                // String through StateFlow on every edit can make some release-build IMEs
+                // discard their composing/selection state and render an apparently empty
+                // field even though the ViewModel already received the pasted text.
+                var packageField by remember {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = state.packageName,
+                            selection = TextRange(state.packageName.length),
+                        ),
+                    )
+                }
+                LaunchedEffect(state.packageName) {
+                    if (packageField.text != state.packageName) {
+                        packageField = TextFieldValue(
+                            text = state.packageName,
+                            selection = TextRange(state.packageName.length),
+                        )
+                    }
+                }
                 OutlinedTextField(
-                    value = state.packageName,
-                    onValueChange = onPackageNameChange,
+                    value = packageField,
+                    onValueChange = { value ->
+                        packageField = value
+                        onPackageNameChange(value.text)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("包名") },
                     placeholder = { Text(state.defaultPackageName) },
@@ -84,9 +110,28 @@ fun LocalCustomizerDialog(
                     isError = state.packageError != null || state.signatureConflict != null,
                     supportingText = packageSupport?.let { message -> { Text(message) } },
                 )
+                var managerNameField by remember {
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = state.managerName,
+                            selection = TextRange(state.managerName.length),
+                        ),
+                    )
+                }
+                LaunchedEffect(state.managerName) {
+                    if (managerNameField.text != state.managerName) {
+                        managerNameField = TextFieldValue(
+                            text = state.managerName,
+                            selection = TextRange(state.managerName.length),
+                        )
+                    }
+                }
                 OutlinedTextField(
-                    value = state.managerName,
-                    onValueChange = onManagerNameChange,
+                    value = managerNameField,
+                    onValueChange = { value ->
+                        managerNameField = value
+                        onManagerNameChange(value.text)
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("管理器名称") },
                     placeholder = { Text(state.defaultManagerName) },

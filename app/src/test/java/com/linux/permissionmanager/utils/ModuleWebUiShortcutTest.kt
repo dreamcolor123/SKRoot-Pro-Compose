@@ -1,67 +1,89 @@
 package com.linux.permissionmanager.utils
 
-import com.linux.permissionmanager.data.InstalledModule
-import com.linux.permissionmanager.data.ModuleRunState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ModuleWebUiShortcutTest {
     @Test
-    fun shortcutSpecIsStableAndLauncherFriendly() {
-        val module = module(id = "demo.module", name = "演示模块")
-        val first = ModuleWebUiShortcut.shortcutSpec(module)
-        val second = ModuleWebUiShortcut.shortcutSpec(module)
+    fun shortcutSpecUsesOnlyOpaqueIdentityAndCustomLabel() {
+        val request = request(moduleId = "demo.module", moduleName = "演示模块", shortcutName = "我的工具")
+        val opaqueId = "AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+        val first = ModuleWebUiShortcut.shortcutSpec(request, opaqueId)
+        val second = ModuleWebUiShortcut.shortcutSpec(request, opaqueId)
 
         assertEquals(first, second)
-        assertTrue(first.shortcutId.startsWith("skroot_webui_"))
-        assertEquals("演示模块 WebUI", first.shortLabel)
-        assertEquals("演示模块 WebUI", first.longLabel)
-        assertTrue(first.shortLabel.length <= 10)
-        assertTrue(first.longLabel.length <= 25)
+        assertEquals(opaqueId, first.opaqueId)
+        assertTrue(first.shortcutId.startsWith("skroot_webui_v2_"))
+        assertFalse(first.shortcutId.contains(request.moduleId))
+        assertEquals("我的工具", first.shortLabel)
+        assertEquals("我的工具", first.longLabel)
         assertEquals(ModuleWebUiShortcut.ACTION_OPEN, "com.linux.permissionmanager.action.OPEN_MODULE_WEBUI")
+        assertEquals(ModuleWebUiShortcut.EXTRA_OPAQUE_ID, "module_webui_shortcut_id")
     }
 
     @Test
-    fun differentModulesReceiveDifferentShortcutIds() {
-        val first = ModuleWebUiShortcut.shortcutSpec(module("module.one", "One"))
-        val second = ModuleWebUiShortcut.shortcutSpec(module("module.two", "Two"))
+    fun differentOpaqueIdsReceiveDifferentShortcutIds() {
+        val request = request("module.one", "One", "One WebUI")
+        val first = ModuleWebUiShortcut.shortcutSpec(request, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        val second = ModuleWebUiShortcut.shortcutSpec(request, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
         assertNotEquals(first.shortcutId, second.shortcutId)
     }
 
     @Test
-    fun longLabelsAreBounded() {
-        val spec = ModuleWebUiShortcut.shortcutSpec(
-            module("long.module", "这是一个非常非常长的模块名称用于桌面快捷方式"),
+    fun longAndControlCharacterLabelsAreNormalized() {
+        val long = ModuleWebUiShortcut.shortcutSpec(
+            request("long.module", "模块", "这是一个非常非常长的快捷方式名称用于测试"),
+            "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
         )
-        assertEquals(10, spec.shortLabel.length)
-        assertTrue(spec.longLabel.length <= 25)
+        val cleaned = ModuleWebUiShortcut.shortcutSpec(
+            request("clean.module", "Demo", "  Demo\n\tModule  "),
+            "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+        )
+
+        assertEquals(10, long.shortLabel.length)
+        assertTrue(long.longLabel.length <= 25)
+        assertEquals("Demo Modul", cleaned.shortLabel)
+        assertEquals("Demo Module", cleaned.longLabel)
     }
 
     @Test
-    fun controlCharactersAreRemovedAndBlankNamesUseModuleId() {
-        val cleaned = ModuleWebUiShortcut.shortcutSpec(
-            module("clean.module", "  Demo\n\tModule  "),
+    fun blankCustomNameFallsBackToModuleName() {
+        val spec = ModuleWebUiShortcut.shortcutSpec(
+            request("fallback.module", "Fallback", "\n\t"),
+            "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
         )
-        val fallback = ModuleWebUiShortcut.shortcutSpec(
-            module("fallback.module", "\n\t"),
-        )
-
-        assertEquals("Demo Modul", cleaned.shortLabel)
-        assertEquals("Demo Module WebUI", cleaned.longLabel)
-        assertTrue(fallback.longLabel.startsWith("fallback.module"))
+        assertEquals("Fallback W", spec.shortLabel)
+        assertEquals("Fallback WebUI", spec.longLabel)
     }
 
-    private fun module(id: String, name: String) = InstalledModule(
-        name = name,
-        description = "",
-        version = "1.0",
-        id = id,
-        author = "",
-        updateJson = "",
-        minSdk = "",
-        hasWebUi = true,
-        runState = ModuleRunState.RUNNING,
+    @Test
+    fun opaqueIdIsUrlSafeAndMappingRoundTrips() {
+        val opaqueId = ModuleWebUiShortcut.opaqueIdFromBytes(ByteArray(24) { it.toByte() })
+        val encoded = ModuleWebUiShortcut.encodeMappings(mapOf(opaqueId to "module.private"))
+        val decoded = ModuleWebUiShortcut.decodeMappings(encoded)
+
+        assertEquals(32, opaqueId.length)
+        assertTrue(opaqueId.all { it.isLetterOrDigit() || it == '-' || it == '_' })
+        assertEquals("module.private", decoded[opaqueId])
+        assertEquals(1, decoded.size)
+    }
+
+    @Test
+    fun invalidMappingDataIsIgnored() {
+        assertTrue(ModuleWebUiShortcut.decodeMappings("not-json").isEmpty())
+        assertTrue(ModuleWebUiShortcut.decodeMappings("{\"short\":\"module\"}").isEmpty())
+    }
+
+    private fun request(
+        moduleId: String,
+        moduleName: String,
+        shortcutName: String,
+    ) = ModuleWebUiShortcutRequest(
+        moduleId = moduleId,
+        moduleName = moduleName,
+        shortcutName = shortcutName,
     )
 }

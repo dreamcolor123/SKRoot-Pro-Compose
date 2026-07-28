@@ -38,6 +38,7 @@ fun HomeScreen(
     onReboot: (String?, Boolean) -> Unit,
 ) {
     var commandDialog by remember { mutableStateOf(false) }
+    var installDialog by remember { mutableStateOf(false) }
     var uninstallDialog by remember { mutableStateOf(false) }
     var rebootDialog by remember { mutableStateOf(false) }
     var pendingReboot by remember { mutableStateOf<RebootOption?>(null) }
@@ -155,7 +156,7 @@ fun HomeScreen(
                             if (showEnvironmentActionsInStatus) {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Button(
-                                        onClick = onInstall,
+                                        onClick = { installDialog = true },
                                         enabled = state.busyAction == null && state.environment.state != EnvironmentState.PENDING_REBOOT,
                                         modifier = Modifier.weight(1f).heightIn(min = 56.dp),
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
@@ -222,7 +223,7 @@ fun HomeScreen(
                             TonalCard(
                                 modifier = Modifier.weight(1f),
                                 enabled = state.busyAction == null,
-                                onClick = onInstall,
+                                onClick = { installDialog = true },
                             ) {
                                 QuickAction(Icons.Outlined.SystemUpdateAlt, "安装环境", "重新安装或更新")
                             }
@@ -269,6 +270,44 @@ fun HomeScreen(
             },
             confirmButton = { Button(onClick = { commandDialog = false; onRunCommand(command) }) { Text("执行") } },
             dismissButton = { TextButton(onClick = { commandDialog = false }) { Text("取消") } },
+        )
+    }
+    if (installDialog) {
+        val updating = state.environment.state == EnvironmentState.OUTDATED
+        val reinstalling = state.environment.state == EnvironmentState.RUNNING ||
+            state.environment.state == EnvironmentState.FAULT
+        AlertDialog(
+            onDismissRequest = { installDialog = false },
+            icon = {
+                Icon(
+                    if (updating) Icons.Outlined.SystemUpdateAlt else Icons.Outlined.InstallMobile,
+                    null,
+                )
+            },
+            title = {
+                Text(
+                    when {
+                        updating -> "更新 SKRoot 环境？"
+                        reinstalling -> "重新安装 SKRoot 环境？"
+                        else -> "安装 SKRoot 环境？"
+                    },
+                )
+            },
+            text = {
+                Text(
+                    when {
+                        updating -> "将使用当前 SDK 更新核心环境，写入完成后需要重启设备才能生效。"
+                        reinstalling -> "将重新写入核心环境。请确认 Root Key 和当前模式配置正确。"
+                        else -> "将向设备写入 SKRoot 核心环境。请确认 Root Key 和当前模式配置正确。"
+                    },
+                )
+            },
+            confirmButton = {
+                Button(onClick = { installDialog = false; onInstall() }) {
+                    Text(if (updating) "确认更新" else "确认安装")
+                }
+            },
+            dismissButton = { TextButton(onClick = { installDialog = false }) { Text("取消") } },
         )
     }
     if (uninstallDialog) {

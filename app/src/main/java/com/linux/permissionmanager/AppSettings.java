@@ -17,7 +17,7 @@ public class AppSettings {
     public static final String KEY_APPEARANCE_GLASS_NAVIGATION_ENABLED = "appearance_glass_navigation_enabled";
     public static final String KEY_APPEARANCE_GLASS_NAVIGATION_TRANSPARENCY = "appearance_glass_navigation_transparency";
     public static final String KEY_MANAGER_UPDATE_CHECK_ENABLED = "manager_update_check_enabled";
-    public static final String KEY_MODULE_WEBUI_SHORTCUT_TOKEN = "module_webui_shortcut_token";
+    public static final String KEY_MODULE_WEBUI_SHORTCUT_MAP = "module_webui_shortcut_map_v2";
     private static SharedPreferences preferences;
 
     public static void init(Context context) {

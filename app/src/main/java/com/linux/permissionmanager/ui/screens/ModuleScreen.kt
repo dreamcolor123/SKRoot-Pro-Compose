@@ -1,8 +1,17 @@
 package com.linux.permissionmanager.ui.screens
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.AddToHomeScreen
 import androidx.compose.material.icons.outlined.*
@@ -10,11 +19,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import com.linux.permissionmanager.data.DownloadProgress
 import com.linux.permissionmanager.data.InstalledModule
 import com.linux.permissionmanager.data.MarketModule
@@ -25,6 +39,9 @@ import com.linux.permissionmanager.ui.theme.LocalSemanticColors
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import com.linux.permissionmanager.ui.theme.LocalChromeSurfaceAlpha
 import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
+import com.linux.permissionmanager.utils.ModuleWebUiShortcutRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val ModuleActionIconSize = 18.dp
 private val ModuleMenuIconSize = 20.dp
@@ -44,7 +61,7 @@ fun ModuleScreen(
     onRemove: (InstalledModule) -> Unit,
     onDetails: (InstalledModule) -> Unit,
     onWebUi: (InstalledModule) -> Unit,
-    onCreateWebUiShortcut: (InstalledModule) -> Unit,
+    onCreateWebUiShortcut: (ModuleWebUiShortcutRequest) -> Unit,
     onCheckUpdate: (InstalledModule) -> Unit,
     onChangelog: (InstalledModule) -> Unit,
     onDownloadUpdate: (InstalledModule) -> Unit,
@@ -56,6 +73,7 @@ fun ModuleScreen(
     var pendingDelete by remember { mutableStateOf<InstalledModule?>(null) }
     var pendingUpdate by remember { mutableStateOf<InstalledModule?>(null) }
     var pendingMarket by remember { mutableStateOf<MarketModule?>(null) }
+    var pendingShortcut by remember { mutableStateOf<InstalledModule?>(null) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -121,7 +139,7 @@ fun ModuleScreen(
             InstalledModules(
                 state, innerPadding, bottomPadding, scrollBehavior,
                 onRefreshInstalled, { pendingDelete = it }, onDetails, onWebUi,
-                onCreateWebUiShortcut, onCheckUpdate, onChangelog, { pendingUpdate = it },
+                { pendingShortcut = it }, onCheckUpdate, onChangelog, { pendingUpdate = it },
             )
         } else {
             MarketModules(
@@ -172,7 +190,159 @@ fun ModuleScreen(
             },
         )
     }
+    pendingShortcut?.let { module ->
+        WebUiShortcutDialog(
+            module = module,
+            onDismiss = { pendingShortcut = null },
+            onConfirm = { name, iconUri ->
+                pendingShortcut = null
+                onCreateWebUiShortcut(
+                    ModuleWebUiShortcutRequest(
+                        moduleId = module.id,
+                        moduleName = module.name,
+                        shortcutName = name,
+                        iconUri = iconUri,
+                    ),
+                )
+            },
+        )
+    }
     state.download?.let { DownloadProgressDialog(it, onCancelDownload) }
+}
+
+@Composable
+private fun WebUiShortcutDialog(
+    module: InstalledModule,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Uri?) -> Unit,
+) {
+    var shortcutName by remember(module.id) {
+        mutableStateOf("${module.name.ifBlank { module.id }} WebUI")
+    }
+    var iconUri by remember(module.id) { mutableStateOf<Uri?>(null) }
+    val iconPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) iconUri = uri
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.AutoMirrored.Outlined.AddToHomeScreen, null) },
+        title = { Text("创建 WebUI 桌面快捷方式") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                OutlinedTextField(
+                    value = shortcutName,
+                    onValueChange = { shortcutName = it.take(25) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("快捷方式名称") },
+                    singleLine = true,
+                    supportingText = { Text("最多 25 个字符") },
+                )
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        ShortcutIconPreview(iconUri, Modifier.size(58.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("桌面图标", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                if (iconUri == null) "使用当前应用图标" else "已选择自定义图标",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(onClick = { iconPicker.launch(arrayOf("image/*")) }) {
+                            Text(if (iconUri == null) "选择" else "更换")
+                        }
+                    }
+                }
+                if (iconUri != null) {
+                    TextButton(
+                        onClick = { iconUri = null },
+                        modifier = Modifier.align(Alignment.End),
+                    ) { Text("使用默认图标") }
+                }
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = MaterialTheme.shapes.large,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Icon(Icons.Outlined.Visibility, null, Modifier.size(20.dp))
+                        Text(
+                            "快捷方式会在桌面和启动器记录中留下名称、图标及所属应用，可能降低管理器的隐藏性。",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(shortcutName.trim(), iconUri) },
+                enabled = shortcutName.isNotBlank(),
+            ) { Text("继续创建") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
+}
+
+@Composable
+private fun ShortcutIconPreview(uri: Uri?, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val defaultBitmap = remember(context.packageName) {
+        runCatching { context.packageManager.getApplicationIcon(context.packageName).toBitmap(256, 256) }.getOrNull()
+    }
+    var customBitmap by remember(uri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(uri) {
+        customBitmap = if (uri == null) null else withContext(Dispatchers.IO) {
+            runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, bounds)
+                }
+                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+                var sample = 1
+                while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 512) sample *= 2
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(
+                        it,
+                        null,
+                        BitmapFactory.Options().apply { inSampleSize = sample },
+                    )
+                }
+            }.getOrNull()
+        }
+    }
+    val bitmap = customBitmap ?: defaultBitmap
+    if (bitmap == null) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Outlined.Image, null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+    } else {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = if (uri == null) "默认快捷方式图标" else "自定义快捷方式图标",
+            modifier = modifier.clip(RoundedCornerShape(16.dp)),
+            contentScale = ContentScale.Crop,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
     private fun acceptModuleWebUiShortcut(source: Intent?) {
         val shortcutIntent = source ?: return
-        val moduleId = ModuleWebUiShortcut.moduleIdFrom(shortcutIntent) ?: return
+        val moduleId = ModuleWebUiShortcut.resolveModuleId(shortcutIntent) ?: return
         mutableModuleWebUiShortcut.value = moduleId
         setIntent(Intent(shortcutIntent).apply { action = Intent.ACTION_MAIN })
     }
@@ -339,7 +339,7 @@ private fun SkpApp(
                     modulePicker.launch("*/*")
                 }
                 is UiEffect.PinModuleWebUiShortcut -> {
-                    val result = ModuleWebUiShortcut.requestPin(context, effect.module)
+                    val result = ModuleWebUiShortcut.requestPin(context, effect.request)
                     snackbarHostState.showSnackbar(result.message)
                 }
                 UiEffect.PickCustomizerIcon -> customizerIconPicker.launch(arrayOf("image/*"))
