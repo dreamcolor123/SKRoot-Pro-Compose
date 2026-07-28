@@ -8,6 +8,27 @@ def requestedApplicationId = project.findProperty('PUBLISH_APPLICATION_ID')?.toS
 def requestedAppName = project.findProperty('PUBLISH_APP_NAME')?.toString()?.trim()
 def effectiveApplicationId = requestedApplicationId ?: 'com.linux.permissionmanager'
 def effectiveAppName = requestedAppName ?: 'SKRoot(Pro)'
+def skrootCoreVersion = project.findProperty('SKROOT_CORE_VERSION')?.toString()?.trim() ?: '4.5.4'
+def skrootUiRevisionText = project.findProperty('SKROOT_UI_REVISION')?.toString()?.trim() ?: '1'
+def coreVersionParts = skrootCoreVersion.tokenize('.')
+if (coreVersionParts.size() != 3 || !coreVersionParts.every { it ==~ /\d+/ }) {
+    throw new GradleException('SKROOT_CORE_VERSION must use major.minor.patch, for example 4.5.4')
+}
+if (!(skrootUiRevisionText ==~ /\d+/)) {
+    throw new GradleException('SKROOT_UI_REVISION must be an integer from 1 to 999')
+}
+def coreMajor = coreVersionParts[0].toInteger()
+def coreMinor = coreVersionParts[1].toInteger()
+def corePatch = coreVersionParts[2].toInteger()
+def skrootUiRevision = skrootUiRevisionText.toInteger()
+if (coreMinor > 99 || corePatch > 99 || skrootUiRevision < 1 || skrootUiRevision > 999) {
+    throw new GradleException('Version ranges are major >= 0, minor/patch 0..99 and UI revision 1..999')
+}
+def releaseVersionName = "${skrootCoreVersion}.${skrootUiRevision}"
+def releaseVersionCode = coreMajor * 10_000_000 + coreMinor * 100_000 + corePatch * 1_000 + skrootUiRevision
+if (releaseVersionCode < 1 || releaseVersionCode > 2_100_000_000) {
+    throw new GradleException("Calculated Android versionCode is out of range: ${releaseVersionCode}")
+}
 def releaseStoreFile = project.findProperty('RELEASE_STORE_FILE')?.toString()
 def releaseStorePassword = project.findProperty('RELEASE_STORE_PASSWORD')?.toString()
 def releaseKeyAlias = project.findProperty('RELEASE_KEY_ALIAS')?.toString()
@@ -24,8 +45,10 @@ android {
         applicationId effectiveApplicationId
         minSdk 26
         targetSdk 31
-        versionCode 1
-        versionName '4.5.4'
+        versionCode releaseVersionCode
+        versionName releaseVersionName
+        buildConfigField 'String', 'SKROOT_CORE_VERSION', "\"${skrootCoreVersion}\""
+        buildConfigField 'int', 'SKROOT_UI_REVISION', skrootUiRevision.toString()
         buildConfigField 'String', 'PUBLISH_APP_NAME', "\"${effectiveAppName.replace('\\', '\\\\').replace('"', '\\"')}\""
         manifestPlaceholders = [appLabel: effectiveAppName]
 
@@ -103,6 +126,14 @@ android {
                 'AutoboxingStateCreation',
                 // targetSdk 31 is an explicit compatibility contract for this migration.
                 'ExpiredTargetSdkVersion'
+    }
+
+    applicationVariants.all { variant ->
+        if (variant.buildType.name == 'release') {
+            variant.outputs.all { output ->
+                output.outputFileName = "v${releaseVersionName}-UI重构版-${effectiveAppName}.apk"
+            }
+        }
     }
 }
 

@@ -651,7 +651,8 @@ private fun AdaptiveMainScreen(
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(
                             alpha = LocalChromeSurfaceAlpha.current
-                        )
+                        ),
+                        tonalElevation = 0.dp,
                     ) {
                         navigationItems.forEachIndexed { index, item ->
                             NavigationBarItem(

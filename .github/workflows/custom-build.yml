@@ -135,22 +135,26 @@ jobs:
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
-          APK='app/build/outputs/apk/release/app-release.apk'
+          APK=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)
           test -f "$APK"
           BADGING=$($AAPT dump badging "$APK")
           printf '%s\n' "$BADGING" | grep -F "package: name='$APPLICATION_ID'" >/dev/null
           printf '%s\n' "$BADGING" | grep -F "application-label:'$APP_NAME'" >/dev/null
+          VERSION_NAME=$(printf '%s\n' "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -1)
+          printf '%s\n' "$VERSION_NAME" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' >/dev/null
           "$APKSIGNER" verify --verbose "$APK" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' >/dev/null
           ICON_ENTRY_COUNT=$(unzip -Z1 "$APK" | grep -Ec 'res/mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)-v4/ic_launcher(_round|_foreground)?\.png|res/mipmap-anydpi-v26/ic_launcher(_round)?\.xml')
           test "$ICON_ENTRY_COUNT" -eq 17
           TAG="${RELEASE_TAG_INPUT:-custom-${GITHUB_RUN_NUMBER}}"
+          DISPLAY_NAME="v${VERSION_NAME}-UI重构版-${APP_NAME}.apk"
           mkdir -p dist
-          OUTPUT="dist/${TAG}-UI重构版-${APP_NAME}.apk"
+          OUTPUT="dist/${DISPLAY_NAME}"
           cp "$APK" "$OUTPUT"
           SHA=$(sha256sum "$OUTPUT" | awk '{print $1}')
           echo "apk=$OUTPUT" >> "$GITHUB_OUTPUT"
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "display_name=$DISPLAY_NAME" >> "$GITHUB_OUTPUT"
           {
             echo "## Custom Release"
             echo
@@ -174,8 +178,8 @@ jobs:
           RELEASE_TAG: ${{ steps.package.outputs.tag }}
           RELEASE_APK: ${{ steps.package.outputs.apk }}
           RELEASE_SHA256: ${{ steps.package.outputs.sha256 }}
+          RELEASE_LABEL: ${{ steps.package.outputs.display_name }}
         run: |
-          RELEASE_LABEL="${RELEASE_TAG}-UI重构版-${APP_NAME}.apk"
           NOTES="$RUNNER_TEMP/release-notes.md"
           {
             echo 'Custom branded Release build.'
@@ -188,5 +192,5 @@ jobs:
             "${RELEASE_APK}#${RELEASE_LABEL}" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "${RELEASE_TAG}-UI重构版-${APP_NAME}" \
+            --title "${APP_NAME} ${RELEASE_TAG}" \
             --notes-file "$NOTES"

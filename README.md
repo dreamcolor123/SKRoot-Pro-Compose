@@ -8,8 +8,10 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 当前版本
 
-- 管理器版本：`4.5.4`
-- Compose UI 发布版本：`v4.5.4-compose.9`
+- 上游核心版本：`4.5.4`
+- 当前应用版本：`4.5.4.10`
+- UI 修订号：`10`
+- 最新公开版本：`v4.5.4-compose.9`（旧命名规则）
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -27,7 +29,19 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - 设备内本地定制管理器：自定义包名、名称和图标后直接导出或安装 APK
 - `StateFlow` UI 状态、`SharedFlow` 一次性事件和 Repository 数据层
 - 五套浅色配色、自定义背景，以及可折叠的背景图片、控件与栏位透明度设置
-- 可选的管理器更新检测，默认关闭
+- 可选的管理器更新检测，默认关闭；更新来源为本仓库 GitHub Releases
+
+## 版本与发布规则
+
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.10`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+
+新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
+
+```text
+v<应用版本>-UI重构版-SKRoot Pro.apk
+```
+
+完整同步、更新渠道、签名与发布检查规则见 [`AGENTS.md`](AGENTS.md)。
 
 ## 构建环境
 
@@ -76,6 +90,12 @@ Debug APK 输出路径：
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
+```
+
+正式版构建会直接生成：
+
+```text
+app/build/outputs/apk/release/v4.5.4.10-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
@@ -138,7 +158,7 @@ base64 -w 0 release.p12 > release.p12.base64
 
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
-工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。Release 文件统一命名为 `<版本标签>-UI重构版-<应用名称>.apk`。
+工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
 
 ### v4.5.4-compose.9 液态玻璃导航栏
 

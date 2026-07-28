@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -65,11 +64,9 @@ fun AppearanceBackground(
                     alpha = appearance.backgroundAlpha,
                 )
             }
-            // A light scrim keeps text readable over bright photographs without
-            // hiding the selected image.
-            if (bitmap != null && appearance.backgroundEnabled) {
-                Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.12f)))
-            }
+            // Do not add a global scrim here. Readability is handled by the
+            // independently adjustable cards and chrome surfaces. This keeps
+            // a 100% visible wallpaper pixel-accurate instead of whitening it.
         }
         content()
     }

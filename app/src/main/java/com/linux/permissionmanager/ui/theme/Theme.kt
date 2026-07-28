@@ -43,10 +43,10 @@ val LocalControlSurfaceAlpha = staticCompositionLocalOf { AppearanceTokens.defau
 val LocalContentDrawsBehindNavigation = staticCompositionLocalOf { false }
 
 object AppearanceTokens {
-    // Page surfaces must remain translucent enough for a user-selected image
-    // to survive compositing. Cards and navigation stay more opaque so text
-    // remains readable over detailed photographs.
-    const val pageSurfaceAlpha = 0.38f
+    // AppearanceBackground already paints the solid fallback. Page scaffolds
+    // stay fully transparent so a selected image receives no second white
+    // layer; cards and chrome provide their own adjustable readability layer.
+    const val pageSurfaceAlpha = 0f
     const val defaultControlSurfaceAlpha = 0.76f
     const val dialogSurfaceAlpha = 0.98f
 }

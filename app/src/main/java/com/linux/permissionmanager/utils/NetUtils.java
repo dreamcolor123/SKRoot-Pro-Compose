@@ -72,6 +72,8 @@ public final class NetUtils {
                     conn = myURL.openConnection();
                     conn.setConnectTimeout(1000 * 60 * 5);
                     conn.setReadTimeout(1000 * 60 * 5);
+                    conn.setRequestProperty("User-Agent", "SKRoot-Pro-Compose");
+                    conn.setRequestProperty("Accept", "application/vnd.github+json, application/json, */*");
                     conn.connect();
 
                     is = conn.getInputStream();
@@ -155,6 +157,8 @@ public final class NetUtils {
                     conn = myURL.openConnection();
                     conn.setConnectTimeout(1000 * 60 * 5);
                     conn.setReadTimeout(1000 * 60 * 5);
+                    conn.setRequestProperty("User-Agent", "SKRoot-Pro-Compose");
+                    conn.setRequestProperty("Accept", "application/octet-stream, */*");
                     conn.connect();
 
                     int fileSize = conn.getContentLength(); // 可能为 -1

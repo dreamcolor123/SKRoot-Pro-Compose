@@ -85,6 +85,7 @@ data class AppUpdate(
     val latestVersion: String,
     val downloadUrl: String,
     val changelogUrl: String,
+    val releaseNotes: String = "",
 )
 
 data class DownloadProgress(

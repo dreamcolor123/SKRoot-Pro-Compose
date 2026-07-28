@@ -257,13 +257,61 @@ object JsonParsers {
         return ModuleUpdate(version != current, version, url, json.optString("changelog", ""))
     }
 
-    fun appUpdate(raw: String, current: String): AppUpdate? {
+    fun managerRelease(raw: String, current: String): AppUpdate? {
         if (raw.isBlank()) return null
         val json = JSONObject(raw)
-        val version = json.optString("version", "")
-        val url = json.optString("appUrl", "")
-        if (version.isBlank() || url.isBlank()) return null
-        return AppUpdate(version != current, version, url, json.optString("changelog", ""))
+        val version = normalizeManagerVersion(json.optString("tag_name", "")) ?: return null
+        val assets = json.optJSONArray("assets") ?: return null
+        val apkAssets = buildList {
+            repeat(assets.length()) { index ->
+                val asset = assets.optJSONObject(index) ?: return@repeat
+                val name = asset.optString("name", "")
+                val url = asset.optString("browser_download_url", "")
+                if (name.endsWith(".apk", ignoreCase = true) && url.isNotBlank()) add(asset)
+            }
+        }
+        val standardName = "v${version}-UI重构版-SKRoot Pro.apk"
+        val asset = apkAssets.firstOrNull { it.optString("name") == standardName }
+            ?: apkAssets.firstOrNull { it.optString("name").contains("com.linux.compose", ignoreCase = true) }
+            ?: apkAssets.firstOrNull { it.optString("name").contains("SKRoot", ignoreCase = true) }
+            ?: apkAssets.firstOrNull()
+            ?: return null
+        return AppUpdate(
+            hasNewVersion = isManagerVersionNewer(version, current),
+            latestVersion = version,
+            downloadUrl = asset.getString("browser_download_url"),
+            changelogUrl = "",
+            releaseNotes = json.optString("body", ""),
+        )
+    }
+
+    fun normalizeManagerVersion(value: String): String? =
+        parseManagerVersion(value)?.joinToString(".")
+
+    fun isManagerVersionNewer(candidate: String, current: String): Boolean {
+        val candidateParts = parseManagerVersion(candidate) ?: return false
+        val currentParts = parseManagerVersion(current) ?: return false
+        for (index in candidateParts.indices) {
+            if (candidateParts[index] != currentParts[index]) {
+                return candidateParts[index] > currentParts[index]
+            }
+        }
+        return false
+    }
+
+    private fun parseManagerVersion(value: String): List<Int>? {
+        val canonical = Regex("^\\s*[vV]?(\\d+)\\.(\\d+)\\.(\\d+)(?:\\.(\\d+))?\\s*$")
+            .matchEntire(value)
+        if (canonical != null) {
+            val core = canonical.groupValues.slice(1..3).mapNotNull(String::toIntOrNull)
+            val revision = canonical.groupValues[4].toIntOrNull() ?: 0
+            return (core + revision).takeIf { it.size == 4 }
+        }
+        val legacy = Regex(
+            "^\\s*[vV]?(\\d+)\\.(\\d+)\\.(\\d+)-compose\\.(\\d+)\\s*$",
+            RegexOption.IGNORE_CASE,
+        ).matchEntire(value) ?: return null
+        return legacy.groupValues.drop(1).mapNotNull(String::toIntOrNull).takeIf { it.size == 4 }
     }
 }
 
@@ -352,17 +400,20 @@ class UpdateRepository(
     private val settings: SettingsStore,
 ) {
     companion object {
-        const val UPDATE_URL = "https://abcz316.github.io/SKRoot-linuxKernelRoot/skroot_pro_app/update.json"
+        const val REPOSITORY_URL = "https://github.com/dreamcolor123/SKRoot-Pro-Compose"
+        const val UPDATE_URL = "https://api.github.com/repos/dreamcolor123/SKRoot-Pro-Compose/releases/latest"
     }
     fun cached(): AppUpdate? = runCatching {
-        JsonParsers.appUpdate(settings.getString("app_update_cache"), BuildConfig.VERSION_NAME)
+        JsonParsers.managerRelease(settings.getString("app_update_cache"), BuildConfig.VERSION_NAME)
     }.getOrNull()
     suspend fun refresh(): AppUpdate? {
         val raw = network.text(UPDATE_URL)
         settings.putString("app_update_cache", raw)
-        return JsonParsers.appUpdate(raw, BuildConfig.VERSION_NAME)
+        return JsonParsers.managerRelease(raw, BuildConfig.VERSION_NAME)
     }
-    suspend fun changelog(update: AppUpdate) = network.text(update.changelogUrl)
+    suspend fun changelog(update: AppUpdate): String = update.releaseNotes.ifBlank {
+        if (update.changelogUrl.isBlank()) "该版本未提供更新日志。" else network.text(update.changelogUrl)
+    }
 }
 
 class AppContainer(context: Context) {

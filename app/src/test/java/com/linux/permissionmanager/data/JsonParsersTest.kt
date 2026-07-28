@@ -1,11 +1,14 @@
 package com.linux.permissionmanager.data
 
 import com.linux.permissionmanager.ui.SettingsUiState
+import com.linux.permissionmanager.ui.theme.AppearanceTokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Test
+import java.io.File
 
 class JsonParsersTest {
     @Test
@@ -87,7 +90,7 @@ class JsonParsersTest {
     }
 
     @Test
-    fun updateParsersRequireVersionAndUrl() {
+    fun moduleUpdateParserKeepsUpstreamProtocol() {
         val module = JsonParsers.moduleUpdate(
             "{\"version\":\"2.0\",\"zipUrl\":\"https://example.com/a.zip\",\"changelog\":\"https://example.com/c\"}",
             "1.0",
@@ -95,12 +98,62 @@ class JsonParsersTest {
         assertTrue(module!!.hasNewVersion)
         assertEquals("2.0", module.latestVersion)
         assertNull(JsonParsers.moduleUpdate("{\"version\":\"2.0\"}", "1.0"))
-
-        val app = JsonParsers.appUpdate(
-            "{\"version\":\"4.5.3\",\"appUrl\":\"https://example.com/app.apk\"}",
-            "4.5.3",
+        assertEquals(
+            "https://abcz316.github.io/SKRoot-linuxKernelRoot/skroot_pro_app/module_market.json",
+            ModuleRepository.MARKET_URL,
         )
-        assertFalse(app!!.hasNewVersion)
+    }
+
+    @Test
+    fun managerUpdateUsesRepositoryReleaseAndCanonicalVersion() {
+        val update = JsonParsers.managerRelease(
+            """{
+              "tag_name":"v4.5.4.11",
+              "body":"Release notes",
+              "assets":[
+                {"name":"source.zip","browser_download_url":"https://example.com/source.zip"},
+                {"name":"v4.5.4.11-UI重构版-SKRoot Pro.apk","browser_download_url":"https://example.com/manager.apk"}
+              ]
+            }""",
+            "4.5.4.10",
+        )
+        assertTrue(update!!.hasNewVersion)
+        assertEquals("4.5.4.11", update.latestVersion)
+        assertEquals("https://example.com/manager.apk", update.downloadUrl)
+        assertEquals("Release notes", update.releaseNotes)
+        assertEquals("4.5.4.9", JsonParsers.normalizeManagerVersion("v4.5.4-compose.9"))
+        assertFalse(JsonParsers.isManagerVersionNewer("v4.5.4.9", "4.5.4.10"))
+        assertTrue(JsonParsers.isManagerVersionNewer("v4.5.5.1", "4.5.4.999"))
+        assertNull(JsonParsers.managerRelease("{\"version\":\"4.5.4\",\"appUrl\":\"https://example.com/official.apk\"}", "4.5.4.10"))
+        assertEquals(
+            "https://api.github.com/repos/dreamcolor123/SKRoot-Pro-Compose/releases/latest",
+            UpdateRepository.UPDATE_URL,
+        )
+
+        val legacyRelease = JsonParsers.managerRelease(
+            """{
+              "tag_name":"v4.5.4-compose.9",
+              "body":"Legacy notes",
+              "assets":[
+                {"name":"v4.5.4-compose.9-UI.-SKRoot.Pro.apk","browser_download_url":"https://example.com/legacy.apk"}
+              ]
+            }""",
+            "4.5.4.8",
+        )
+        assertTrue(legacyRelease!!.hasNewVersion)
+        assertEquals("4.5.4.9", legacyRelease.latestVersion)
+        assertEquals("https://example.com/legacy.apk", legacyRelease.downloadUrl)
+    }
+
+    @Test
+    fun parsesLiveRepositoryReleaseWhenFixtureIsProvided() {
+        val fixture = System.getenv("SKP_RELEASE_JSON")?.let(::File)
+        assumeTrue("Set SKP_RELEASE_JSON to a GitHub latest-release response", fixture?.isFile == true)
+        val update = JsonParsers.managerRelease(fixture!!.readText(), "0.0.0.0")
+        assertTrue(update != null)
+        assertTrue(update!!.hasNewVersion)
+        assertTrue(update.downloadUrl.startsWith("https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/"))
+        assertTrue(Regex("^\\d+\\.\\d+\\.\\d+\\.\\d+$").matches(update.latestVersion))
     }
 
     @Test
@@ -122,6 +175,7 @@ class JsonParsersTest {
         assertEquals(1f, appearance.copy(glassNavigationTransparency = -1f).glassNavigationOpacity, 0.0001f)
         assertEquals(0f, appearance.copy(glassNavigationTransparency = 1f).glassNavigationOpacity, 0.0001f)
         assertEquals(0f, appearance.copy(glassNavigationTransparency = 2f).glassNavigationOpacity, 0.0001f)
+        assertEquals(0f, AppearanceTokens.pageSurfaceAlpha, 0.0001f)
         assertEquals(5, PaletteId.values().size)
     }
 

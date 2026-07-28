@@ -17,8 +17,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.linux.permissionmanager.BuildConfig
 import com.linux.permissionmanager.data.AppearanceSettings
 import com.linux.permissionmanager.data.PaletteId
+import com.linux.permissionmanager.data.UpdateRepository
 import com.linux.permissionmanager.ui.SettingsUiState
 import com.linux.permissionmanager.ui.components.*
 import com.linux.permissionmanager.ui.theme.AppearanceTokens
@@ -321,15 +323,17 @@ fun SettingsScreen(
                     SegmentedGroup("更新与关于") {
                         SegmentedSwitchItem(
                             title = "检测管理器更新",
-                            summary = "启用后联网检查管理器版本；默认关闭",
+                            summary = "启用后从本项目 GitHub Releases 检查；默认关闭",
                             icon = Icons.Outlined.SystemUpdate,
                             checked = state.updateCheckEnabled,
                             enabled = state.busyItem == null,
                             onCheckedChange = onUpdateCheckChange,
                         )
+                        SegmentedItem("管理器版本", BuildConfig.VERSION_NAME, Icons.Outlined.Info)
                         SegmentedItem("内置核心版本", state.sdkVersion, Icons.Outlined.Memory)
                         SegmentedItem("SKRoot 模块开发指南", "PDF 文档", Icons.Outlined.MenuBook, onClick = { onOpenUrl("https://abcz316.github.io/SKRoot-linuxKernelRoot/skroot_pro_app/module_developer_help.pdf") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
-                        SegmentedItem("GitHub", "github.com/abcz316/SKRoot-linuxKernelRoot", Icons.Outlined.Code, onClick = { onOpenUrl("https://github.com/abcz316/SKRoot-linuxKernelRoot") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
+                        SegmentedItem("管理器项目 GitHub", "github.com/dreamcolor123/SKRoot-Pro-Compose", Icons.Outlined.Code, onClick = { onOpenUrl(UpdateRepository.REPOSITORY_URL) }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
+                        SegmentedItem("SKRoot 上游 GitHub", "github.com/abcz316/SKRoot-linuxKernelRoot", Icons.Outlined.AccountTree, onClick = { onOpenUrl("https://github.com/abcz316/SKRoot-linuxKernelRoot") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
                         SegmentedItem("Telegram", "t.me/skrootabc", Icons.Outlined.Send, onClick = { onOpenUrl("https://t.me/skrootabc") }, trailing = { Icon(Icons.Outlined.OpenInNew, null) })
                     }
                 }
