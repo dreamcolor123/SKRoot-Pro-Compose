@@ -31,6 +31,19 @@ import com.linux.permissionmanager.ui.LocalCustomizerUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+internal fun synchronizeImeTextFieldValue(
+    current: TextFieldValue,
+    externalText: String,
+): TextFieldValue = if (current.text == externalText) {
+    // Preserve the IME composition and selection that are not represented by the ViewModel String.
+    current
+} else {
+    TextFieldValue(
+        text = externalText,
+        selection = TextRange(externalText.length),
+    )
+}
+
 @Composable
 fun LocalCustomizerDialog(
     state: LocalCustomizerUiState,
@@ -89,12 +102,7 @@ fun LocalCustomizerDialog(
                     )
                 }
                 LaunchedEffect(state.packageName) {
-                    if (packageField.text != state.packageName) {
-                        packageField = TextFieldValue(
-                            text = state.packageName,
-                            selection = TextRange(state.packageName.length),
-                        )
-                    }
+                    packageField = synchronizeImeTextFieldValue(packageField, state.packageName)
                 }
                 OutlinedTextField(
                     value = packageField,
@@ -119,12 +127,7 @@ fun LocalCustomizerDialog(
                     )
                 }
                 LaunchedEffect(state.managerName) {
-                    if (managerNameField.text != state.managerName) {
-                        managerNameField = TextFieldValue(
-                            text = state.managerName,
-                            selection = TextRange(state.managerName.length),
-                        )
-                    }
+                    managerNameField = synchronizeImeTextFieldValue(managerNameField, state.managerName)
                 }
                 OutlinedTextField(
                     value = managerNameField,
