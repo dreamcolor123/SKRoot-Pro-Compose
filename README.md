@@ -11,7 +11,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - 上游核心版本：`4.5.4`
 - 当前应用版本：`4.5.4.10`
 - UI 修订号：`10`
-- 最新公开版本：`v4.5.4-compose.9`（旧命名规则）
+- 最新公开版本：`v4.5.4.10`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -110,14 +110,14 @@ app/build/outputs/apk/release/v4.5.4.10-UI重构版-SKRoot Pro.apk
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
-最新公开 Release [v4.5.4-compose.9](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4-compose.9) 提供签名正式版 APK：
+最新公开 Release [v4.5.4.10](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.4.10) 提供签名正式版 APK：
 
-- [`v4.5.4-compose.9-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4-compose.9/v4.5.4-compose.9-UI.-SKRoot.Pro.apk)
+- [`v4.5.4.10-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.4.10/v4.5.4.10-UI-SKRoot-Pro.apk)
 
 SHA-256：
 
 ```text
-44ebf45f63b3dbb2a84cce22a0cdc4884fe9661b9ab2f6caa3d4061542f5d195  v4.5.4-compose.9-UI重构版-SKRoot Pro.apk
+5c3777c78ad0787a0b05348c0d196bc51d9a914046c4f8756441740383d43a15  v4.5.4.10-UI重构版-SKRoot Pro.apk
 ```
 
 ## 上游项目与致谢
@@ -163,6 +163,10 @@ base64 -w 0 release.p12 > release.p12.base64
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
+
+### v4.5.4.10 模块 WebUI 快捷方式
+
+带 WebUI 的已安装模块现可从“更多”菜单创建桌面快捷方式；点击后会冷启动或复用管理器并打开对应模块 WebUI。未配置 Root Key 时会先打开配置窗口，保存后继续原请求。同时修复了自定义背景图的多层表面叠加与全局白色遮罩，100% 可见度时背景不再被额外漂白。
 
 ### v4.5.4-compose.9 液态玻璃导航栏
 
