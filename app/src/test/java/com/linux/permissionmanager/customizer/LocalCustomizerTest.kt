@@ -36,6 +36,7 @@ class LocalCustomizerTest {
 
     @Test
     fun packageNameValidationFollowsApplicationIdRules() {
+        assertEquals("com.example.manager", PackageNameValidator.normalizeInput("\n  com.example.manager\r\n"))
         assertNull(PackageNameValidator.error("com.example.manager"))
         assertNull(PackageNameValidator.error("Com.Example2.manager_build"))
         assertTrue(PackageNameValidator.error("manager") != null)

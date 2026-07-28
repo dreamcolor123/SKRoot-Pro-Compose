@@ -27,6 +27,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toBitmap
 import com.linux.permissionmanager.customizer.CustomBuildStage
+import com.linux.permissionmanager.customizer.PackageNameValidator
 import com.linux.permissionmanager.ui.LocalCustomizerUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,15 +45,29 @@ internal fun synchronizeImeTextFieldValue(
     )
 }
 
-internal fun sanitizePackageTextFieldValue(value: TextFieldValue): TextFieldValue = TextFieldValue(
-    // Package names are plain ASCII identifiers. Rebuilding from String removes foreground
-    // colors and other spans attached by clipboard/quick-phrase implementations.
-    text = value.text,
-    selection = value.selection,
-    // Some IMEs submit clipboard phrases as composing text. Committing it here prevents a
-    // stale IME-owned composition style from making otherwise valid pasted text invisible.
-    composition = null,
-)
+internal fun sanitizePackageTextFieldValue(value: TextFieldValue): TextFieldValue {
+    val raw = value.text
+    val normalized = PackageNameValidator.normalizeInput(raw)
+    val contentStart = raw.indexOfFirst { !it.isWhitespace() }.let { if (it < 0) raw.length else it }
+    val contentEnd = raw.indexOfLast { !it.isWhitespace() }.let { if (it < 0) contentStart else it + 1 }
+    fun mapOffset(offset: Int): Int {
+        if (contentStart >= contentEnd) return 0
+        val bounded = offset.coerceIn(contentStart, contentEnd)
+        return raw.substring(contentStart, bounded).count { it != '\r' && it != '\n' }
+            .coerceIn(0, normalized.length)
+    }
+    return TextFieldValue(
+        // Package names are plain identifiers. Rebuilding from String strips clipboard spans;
+        // removing line breaks also prevents a leading newline from placing all glyphs outside
+        // the visible line of a single-line text field.
+        text = normalized,
+        selection = TextRange(
+            mapOffset(value.selection.start),
+            mapOffset(value.selection.end),
+        ),
+        composition = null,
+    )
+}
 
 @Composable
 fun LocalCustomizerDialog(

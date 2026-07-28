@@ -16,17 +16,17 @@ class LocalCustomizerInputStateTest {
     fun packageInputDropsClipboardStylesAndCommitsComposition() {
         val styledPaste = TextFieldValue(
             annotatedString = AnnotatedString(
-                text = "com.example.pasted",
+                text = "\ncom.example.pasted\r",
                 spanStyles = listOf(
                     AnnotatedString.Range(
                         item = SpanStyle(color = Color.Transparent),
                         start = 0,
-                        end = 18,
+                        end = 20,
                     ),
                 ),
             ),
-            selection = TextRange(18),
-            composition = TextRange(0, 18),
+            selection = TextRange(20),
+            composition = TextRange(0, 20),
         )
 
         val sanitized = sanitizePackageTextFieldValue(styledPaste)

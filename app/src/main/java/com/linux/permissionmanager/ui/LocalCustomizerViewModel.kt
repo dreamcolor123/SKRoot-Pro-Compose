@@ -78,11 +78,11 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
     }
 
     fun setPackageName(value: String) {
-        val normalized = value.trim()
+        val normalized = PackageNameValidator.normalizeInput(value)
         val syntaxError = if (normalized.isBlank()) null else PackageNameValidator.error(normalized)
         mutableState.update {
             it.copy(
-                packageName = value,
+                packageName = normalized,
                 packageError = syntaxError,
                 signatureConflict = null,
                 checkingPackage = syntaxError == null,
@@ -90,7 +90,7 @@ class LocalCustomizerViewModel(private val app: PermissionManagerApplication) : 
                 artifact = null,
             )
         }
-        scheduleSignatureCheck(value)
+        scheduleSignatureCheck(normalized)
     }
 
     fun setManagerName(value: String) = mutableState.update {

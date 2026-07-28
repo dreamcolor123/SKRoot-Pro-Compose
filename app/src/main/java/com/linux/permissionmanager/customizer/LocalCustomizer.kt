@@ -64,6 +64,11 @@ data class CustomBuildArtifact(
 
 object PackageNameValidator {
     private val pattern = Regex("^[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+$")
+    fun normalizeInput(value: String): String = value
+        .replace("\r", "")
+        .replace("\n", "")
+        .trim()
+
     fun error(value: String): String? = when {
         value.isBlank() -> "请输入包名"
         value.length > 180 -> "包名过长"
