@@ -48,8 +48,14 @@ class ModuleWebUiShortcutRouterActivity : ComponentActivity() {
                             // The Native endpoint starts the local server asynchronously.
                             // Give it a brief head start before the browser performs its first request.
                             delay(180)
-                            openBrowser(url)
-                            finishAndRemoveTask()
+                            if (openBrowser(url)) {
+                                // The browser must remain outside this short-lived, excluded task.
+                                // Removing the whole router task here can hide/destroy a browser
+                                // activity before a WebUI has completed its first request.
+                                finish()
+                            } else {
+                                finishAndRemoveTask()
+                            }
                         }
                         else -> {
                             toast(result.ifBlank { "打开模块 WebUI 失败" })
@@ -83,12 +89,18 @@ class ModuleWebUiShortcutRouterActivity : ComponentActivity() {
         finishAndRemoveTask()
     }
 
-    private fun openBrowser(url: String) {
-        runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        }.onFailure {
-            toast("未找到可打开 WebUI 的浏览器")
-        }
+    private fun openBrowser(url: String): Boolean = runCatching {
+        // Starting from the application context plus NEW_TASK keeps the browser in
+        // its own task. The router can then finish without removing the new page.
+        applicationContext.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
+        true
+    }.getOrElse {
+        toast("未找到可打开 WebUI 的浏览器")
+        false
     }
 
     private fun toast(message: String) {
