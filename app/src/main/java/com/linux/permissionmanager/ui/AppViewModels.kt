@@ -461,6 +461,8 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
     private var key = ""
     private var downloadHandle: NetUtils.DownloadHandle? = null
     private var installedRefreshJob: Job? = null
+    private var shortcutOpenJob: Job? = null
+    private var pendingShortcutModuleId: String? = null
     private var installedRefreshRequestId = 0L
     @Volatile private var downloadCancelled = false
 
@@ -468,10 +470,14 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
         installed.id.isNotBlank() && market.id.isNotBlank() && installed.id.equals(market.id, ignoreCase = true)
 
     fun setRootKey(value: String) {
-        if (value == key && !mutableState.value.installedLoading) return
+        if (value == key && !mutableState.value.installedLoading) {
+            if (pendingShortcutModuleId != null) tryOpenPendingWebUiShortcut()
+            return
+        }
         key = value
         refreshInstalled()
         if (mutableState.value.market.isEmpty()) refreshMarket()
+        if (pendingShortcutModuleId != null) tryOpenPendingWebUiShortcut()
     }
     fun selectTab(tab: Int) = mutableState.update { it.copy(selectedTab = tab.coerceIn(0, 1)) }
     fun setMarketQuery(value: String) = mutableState.update { it.copy(marketQuery = value) }
@@ -531,6 +537,59 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
 
     fun remove(module: InstalledModule) = mutate({ repository.remove(key, module) }) { refreshInstalled() }
     fun openWebUi(module: InstalledModule) = mutate({ repository.openWebUi(key, module) })
+    fun requestWebUiShortcut(module: InstalledModule) = events.emit(UiEffect.PinModuleWebUiShortcut(module))
+
+    fun openWebUiShortcut(moduleId: String, rootKey: String) {
+        val normalizedId = moduleId.trim()
+        if (normalizedId.isBlank()) {
+            events.emit(UiEffect.Snackbar("快捷方式中的模块 ID 为空"))
+            return
+        }
+        if (rootKey != key) key = rootKey
+        pendingShortcutModuleId = normalizedId
+        tryOpenPendingWebUiShortcut()
+    }
+
+    private fun tryOpenPendingWebUiShortcut() {
+        val moduleId = pendingShortcutModuleId ?: return
+        val requestKey = key
+        if (requestKey.isBlank()) {
+            events.emit(UiEffect.ShowRootConfig)
+            return
+        }
+        if (shortcutOpenJob?.isActive == true) return
+        shortcutOpenJob = viewModelScope.launch {
+            mutableState.update { it.copy(busy = true) }
+            runCatching { repository.openWebUi(requestKey, moduleId) }
+                .onSuccess { result ->
+                    if (pendingShortcutModuleId != moduleId) return@onSuccess
+                    if (looksLikeRootKeyFailure(result)) {
+                        events.emit(UiEffect.ShowRootConfig)
+                    } else {
+                        pendingShortcutModuleId = null
+                        events.emit(UiEffect.Snackbar(result.ifBlank { "正在打开模块 WebUI" }))
+                    }
+                }
+                .onFailure { error ->
+                    if (pendingShortcutModuleId != moduleId) return@onFailure
+                    if (looksLikeRootKeyFailure(error.message)) {
+                        events.emit(UiEffect.ShowRootConfig)
+                    } else {
+                        pendingShortcutModuleId = null
+                        events.emit(UiEffect.Snackbar(error.message ?: "打开模块 WebUI 失败"))
+                    }
+                }
+            mutableState.update { it.copy(busy = false) }
+            shortcutOpenJob = null
+            if (
+                pendingShortcutModuleId != null &&
+                key.isNotBlank() &&
+                (key != requestKey || pendingShortcutModuleId != moduleId)
+            ) {
+                tryOpenPendingWebUiShortcut()
+            }
+        }
+    }
 
     fun showDetails(module: InstalledModule) {
         val text = buildString {

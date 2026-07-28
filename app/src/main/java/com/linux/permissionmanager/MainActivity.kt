@@ -55,21 +55,46 @@ import com.linux.permissionmanager.ui.theme.LocalContentDrawsBehindNavigation
 import com.linux.permissionmanager.ui.theme.SkpTheme
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.GetAppListPermissionHelper
+import com.linux.permissionmanager.utils.ModuleWebUiShortcut
 import com.linux.permissionmanager.utils.UrlIntentUtils
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+    private val mutableModuleWebUiShortcut = MutableStateFlow<String?>(null)
+    internal val moduleWebUiShortcut: StateFlow<String?> = mutableModuleWebUiShortcut.asStateFlow()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) acceptModuleWebUiShortcut(intent)
         enableEdgeToEdge()
         setContent { SkpRoot() }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        acceptModuleWebUiShortcut(intent)
+    }
+
+    internal fun consumeModuleWebUiShortcut(moduleId: String) {
+        mutableModuleWebUiShortcut.compareAndSet(moduleId, null)
+    }
+
+    private fun acceptModuleWebUiShortcut(source: Intent?) {
+        val shortcutIntent = source ?: return
+        val moduleId = ModuleWebUiShortcut.moduleIdFrom(shortcutIntent) ?: return
+        mutableModuleWebUiShortcut.value = moduleId
+        setIntent(Intent(shortcutIntent).apply { action = Intent.ACTION_MAIN })
     }
 }
 
@@ -146,6 +171,7 @@ private fun SkpApp(
     val moduleState by moduleViewModel.state.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
     val localCustomizerState by localCustomizerViewModel.state.collectAsStateWithLifecycle()
+    val shortcutModuleId by activity.moduleWebUiShortcut.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
@@ -287,6 +313,13 @@ private fun SkpApp(
         settingsViewModel.setRootKey(mainState.activeRootKey)
     }
 
+    LaunchedEffect(shortcutModuleId, mainState.activeRootKey) {
+        val moduleId = shortcutModuleId ?: return@LaunchedEffect
+        activity.consumeModuleWebUiShortcut(moduleId)
+        mainViewModel.selectPage(2)
+        moduleViewModel.openWebUiShortcut(moduleId, mainState.activeRootKey)
+    }
+
     LaunchedEffect(Unit) {
         application.container.events.events.collect { effect ->
             when (effect) {
@@ -304,6 +337,10 @@ private fun SkpApp(
                 is UiEffect.PickModule -> {
                     pendingRunOnce = effect.runOnce
                     modulePicker.launch("*/*")
+                }
+                is UiEffect.PinModuleWebUiShortcut -> {
+                    val result = ModuleWebUiShortcut.requestPin(context, effect.module)
+                    snackbarHostState.showSnackbar(result.message)
                 }
                 UiEffect.PickCustomizerIcon -> customizerIconPicker.launch(arrayOf("image/*"))
                 is UiEffect.ExportCustomizedApk -> {
@@ -392,6 +429,7 @@ private fun SkpApp(
                         onRemove = moduleViewModel::remove,
                         onDetails = moduleViewModel::showDetails,
                         onWebUi = moduleViewModel::openWebUi,
+                        onCreateWebUiShortcut = moduleViewModel::requestWebUiShortcut,
                         onCheckUpdate = { moduleViewModel.checkUpdate(it) },
                         onChangelog = moduleViewModel::showChangelog,
                         onDownloadUpdate = moduleViewModel::downloadUpdate,

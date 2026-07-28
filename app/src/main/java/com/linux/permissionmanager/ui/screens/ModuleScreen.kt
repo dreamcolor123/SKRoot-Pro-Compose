@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.AddToHomeScreen
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +44,7 @@ fun ModuleScreen(
     onRemove: (InstalledModule) -> Unit,
     onDetails: (InstalledModule) -> Unit,
     onWebUi: (InstalledModule) -> Unit,
+    onCreateWebUiShortcut: (InstalledModule) -> Unit,
     onCheckUpdate: (InstalledModule) -> Unit,
     onChangelog: (InstalledModule) -> Unit,
     onDownloadUpdate: (InstalledModule) -> Unit,
@@ -119,7 +121,7 @@ fun ModuleScreen(
             InstalledModules(
                 state, innerPadding, bottomPadding, scrollBehavior,
                 onRefreshInstalled, { pendingDelete = it }, onDetails, onWebUi,
-                onCheckUpdate, onChangelog, { pendingUpdate = it },
+                onCreateWebUiShortcut, onCheckUpdate, onChangelog, { pendingUpdate = it },
             )
         } else {
             MarketModules(
@@ -184,6 +186,7 @@ private fun InstalledModules(
     onDelete: (InstalledModule) -> Unit,
     onDetails: (InstalledModule) -> Unit,
     onWebUi: (InstalledModule) -> Unit,
+    onCreateWebUiShortcut: (InstalledModule) -> Unit,
     onCheckUpdate: (InstalledModule) -> Unit,
     onChangelog: (InstalledModule) -> Unit,
     onUpdate: (InstalledModule) -> Unit,
@@ -212,7 +215,7 @@ private fun InstalledModules(
             EmptyState("暂无已安装模块", "点击右上角从 ZIP 安装模块", icon = Icons.Outlined.ExtensionOff)
         }
         items(state.installed, key = { it.id }) { module ->
-            InstalledModuleCard(module, onDelete, onDetails, onWebUi, onCheckUpdate, onChangelog, onUpdate)
+            InstalledModuleCard(module, onDelete, onDetails, onWebUi, onCreateWebUiShortcut, onCheckUpdate, onChangelog, onUpdate)
         }
     }
 }
@@ -223,6 +226,7 @@ private fun InstalledModuleCard(
     onDelete: (InstalledModule) -> Unit,
     onDetails: (InstalledModule) -> Unit,
     onWebUi: (InstalledModule) -> Unit,
+    onCreateWebUiShortcut: (InstalledModule) -> Unit,
     onCheckUpdate: (InstalledModule) -> Unit,
     onChangelog: (InstalledModule) -> Unit,
     onUpdate: (InstalledModule) -> Unit,
@@ -261,6 +265,13 @@ private fun InstalledModuleCard(
                     IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, "更多") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(text = { Text("详情") }, leadingIcon = { Icon(Icons.Outlined.Info, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onDetails(module) })
+                        if (module.hasWebUi) {
+                            DropdownMenuItem(
+                                text = { Text("创建 WebUI 桌面快捷方式") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Outlined.AddToHomeScreen, null, Modifier.size(ModuleMenuIconSize)) },
+                                onClick = { menu = false; onCreateWebUiShortcut(module) },
+                            )
+                        }
                         if (module.updateJson.isNotBlank()) DropdownMenuItem(text = { Text("检查更新") }, leadingIcon = { Icon(Icons.Outlined.Update, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onCheckUpdate(module) })
                         if (!module.update?.changelogUrl.isNullOrBlank()) DropdownMenuItem(text = { Text("更新日志") }, leadingIcon = { Icon(Icons.Outlined.Article, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onChangelog(module) })
                         HorizontalDivider()

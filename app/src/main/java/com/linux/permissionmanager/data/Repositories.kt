@@ -377,6 +377,7 @@ class ModuleRepository(
     }
 
     suspend fun openWebUi(key: String, module: InstalledModule) = native.openModuleWebUi(key, module.id)
+    suspend fun openWebUi(key: String, moduleId: String) = native.openModuleWebUi(key, moduleId)
 
     suspend fun checkUpdate(module: InstalledModule): ModuleUpdate? {
         if (module.updateJson.isBlank()) return null
