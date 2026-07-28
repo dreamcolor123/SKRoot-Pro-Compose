@@ -16,7 +16,7 @@ import com.linux.permissionmanager.utils.NetUtils
 import com.linux.permissionmanager.utils.ModuleWebUiShortcutRequest
 import com.linux.permissionmanager.utils.ShellUtils
 import com.linux.permissionmanager.utils.looksLikeRootKeyFailure
-import com.linux.permissionmanager.utils.moduleWebUiUrl
+import com.linux.permissionmanager.utils.moduleWebUiPort
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -525,11 +525,11 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
         mutableState.update { it.copy(busy = true) }
         runCatching { repository.openWebUi(key, module) }
             .onSuccess { result ->
-                val url = moduleWebUiUrl(result)
+                // The native loader starts the browser after creating the local server.
                 when {
                     looksLikeRootKeyFailure(result) -> events.emit(UiEffect.ShowRootConfig)
-                    url != null -> events.emit(UiEffect.OpenUrl(url))
-                    else -> events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
+                    moduleWebUiPort(result) == null ->
+                        events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
                 }
             }
             .onFailure { error ->
@@ -569,9 +569,10 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                         events.emit(UiEffect.ShowRootConfig)
                     } else {
                         pendingShortcutModuleId = null
-                        val url = moduleWebUiUrl(result)
-                        if (url != null) events.emit(UiEffect.OpenUrl(url))
-                        else events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
+                        // A valid port means the native loader has also dispatched the browser.
+                        if (moduleWebUiPort(result) == null) {
+                            events.emit(UiEffect.Snackbar(result.ifBlank { "打开模块 WebUI 失败" }))
+                        }
                     }
                 }
                 .onFailure { error ->

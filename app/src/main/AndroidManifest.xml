@@ -32,8 +32,6 @@
             android:name="com.linux.permissionmanager.ModuleWebUiShortcutRouterActivity"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:finishOnTaskLaunch="true"
-            android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
