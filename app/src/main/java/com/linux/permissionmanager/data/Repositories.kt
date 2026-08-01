@@ -61,6 +61,7 @@ class SettingsStore {
 
 class SkrootRepository(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val environmentMutationDispatcher: CoroutineDispatcher = Dispatchers.Main.immediate,
 ) {
     private val nativeMutex = Mutex()
 
@@ -68,12 +69,27 @@ class SkrootRepository(
         nativeMutex.withLock { block() }
     }
 
+    /**
+     * The upstream manager invokes environment installation and removal from the
+     * Android main thread. These calls eventually fork helper processes inside
+     * the native SDK, so preserve that verified caller-thread contract instead
+     * of moving just these two entry points onto a coroutine worker thread.
+     */
+    private suspend fun <T> mutateEnvironment(block: () -> T): T =
+        withContext(environmentMutationDispatcher) {
+            nativeMutex.withLock { block() }
+        }
+
     suspend fun environmentState(key: String) = native { NativeBridge.getSkrootEnvState(key) }
     suspend fun installedVersion(key: String) = native { NativeBridge.getInstalledSkrootEnvVersion(key) }
     suspend fun sdkVersion() = native { NativeBridge.getSdkVersion() }
     suspend fun systemStatusJson() = native { NativeBridge.getSystemStatusJson() }
-    suspend fun installEnvironment(key: String, hotload: Boolean) = native { NativeBridge.installSkrootEnv(key, hotload) }
-    suspend fun uninstallEnvironment(key: String) = native { NativeBridge.uninstallSkrootEnv(key) }
+    suspend fun installEnvironment(key: String, hotload: Boolean) = mutateEnvironment {
+        NativeBridge.installSkrootEnv(key, hotload)
+    }
+    suspend fun uninstallEnvironment(key: String) = mutateEnvironment {
+        NativeBridge.uninstallSkrootEnv(key)
+    }
     suspend fun testRoot(key: String) = native { NativeBridge.testRoot(key) }
     suspend fun runCommand(key: String, command: String) = native { NativeBridge.runRootCmd(key, command) }
     suspend fun testBasics(key: String, item: String) = native { NativeBridge.testSkrootBasics(key, item) }

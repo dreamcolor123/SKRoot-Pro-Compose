@@ -294,13 +294,20 @@ fun HomeScreen(
                 )
             },
             text = {
-                Text(
-                    when {
-                        updating -> "将使用当前 SDK 更新核心环境，写入完成后需要重启设备才能生效。"
-                        reinstalling -> "将重新写入核心环境。请确认 Root Key 和当前模式配置正确。"
-                        else -> "将向设备写入 SKRoot 核心环境。请确认 Root Key 和当前模式配置正确。"
-                    },
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        when {
+                            updating -> "将使用当前 SDK 更新核心环境，写入完成后需要重启设备才能生效。"
+                            reinstalling -> "将重新写入核心环境。请确认 Root Key 和当前模式配置正确。"
+                            else -> "将向设备写入 SKRoot 核心环境。请确认 Root Key 和当前模式配置正确。"
+                        },
+                    )
+                    Text(
+                        "当前安装模式：${if (state.environment.hotload) "热启动" else "Boot"}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             },
             confirmButton = {
                 Button(onClick = { installDialog = false; onInstall() }) {

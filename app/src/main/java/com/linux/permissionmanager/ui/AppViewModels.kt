@@ -280,24 +280,42 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
         }
     }
 
-    fun install() = operation("安装环境") {
-        val result = native.installEnvironment(key, settings.hotload)
-        append(result)
-        val success = result.contains(Regex("(?i)(?:^|:\\s*)OK(?:\\b|，)"))
-        if (settings.hotload && success) {
-            native.runCommand(key, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
+    fun install(rootKey: String = key, hotload: Boolean = settings.hotload) {
+        val requestKey = rootKey.trim()
+        if (requestKey.isBlank()) {
+            events.emit(UiEffect.ShowRootConfig)
+            events.emit(UiEffect.Snackbar("请先配置 Root Key"))
+            return
         }
-        if (success && !settings.hotload) {
-            pendingEnvironmentReboot = true
-            mutableState.update { state ->
-                state.copy(
-                    loading = false,
-                    error = null,
-                    environment = state.environment.copy(state = EnvironmentState.PENDING_REBOOT),
-                )
+        if (requestKey != key) {
+            key = requestKey
+            pendingEnvironmentReboot = false
+        }
+        operation("安装环境") {
+            val modeName = if (hotload) "热启动" else "Boot"
+            append("开始安装 SKRoot 环境（模式：$modeName，Key 长度：${requestKey.length}）…")
+            val result = native.installEnvironment(requestKey, hotload)
+            append(result.ifBlank { "install_skroot_environment: 未返回结果" })
+            val success = result.contains(Regex("(?i)(?:^|:\\s*)OK(?:\\b|，)"))
+            if (looksLikeRootKeyFailure(result)) events.emit(UiEffect.ShowRootConfig)
+            if (hotload && success) {
+                native.runCommand(requestKey, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
             }
-        } else {
-            refresh()
+            if (success && !hotload) {
+                pendingEnvironmentReboot = true
+                mutableState.update { state ->
+                    state.copy(
+                        loading = false,
+                        error = null,
+                        environment = state.environment.copy(
+                            state = EnvironmentState.PENDING_REBOOT,
+                            hotload = false,
+                        ),
+                    )
+                }
+            } else {
+                refresh()
+            }
         }
     }
 

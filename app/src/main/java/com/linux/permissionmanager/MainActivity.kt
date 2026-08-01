@@ -390,7 +390,9 @@ private fun SkpApp(
                         bottomPadding = it,
                         onConfigureRoot = mainViewModel::showRootConfig,
                         onRefresh = homeViewModel::refresh,
-                        onInstall = homeViewModel::install,
+                        onInstall = {
+                            homeViewModel.install(rootKey = mainState.activeRootKey)
+                        },
                         onUninstall = homeViewModel::uninstall,
                         onTestRoot = homeViewModel::testRoot,
                         onRunCommand = homeViewModel::runCommand,
