@@ -402,7 +402,12 @@ class LocalCustomizerRepository(private val context: Context) {
         }
 
         ZipFile(file).use { zip ->
-            listOf("libmagica.so", "libpermissionmanager.so", "libresetprop.so").forEach { library ->
+            listOf(
+                "libmagica.so",
+                "libpermissionmanager.so",
+                "libresetprop.so",
+                "libcve2026_43499_ghostlock.so",
+            ).forEach { library ->
                 require(zip.getEntry("lib/arm64-v8a/$library") != null) { "缺少 arm64 Native 库: $library" }
             }
             iconEntries.values.forEach { (_, _, directory) ->

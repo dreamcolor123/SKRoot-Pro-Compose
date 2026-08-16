@@ -399,6 +399,7 @@ private fun SkpApp(
                         onCopyConsole = homeViewModel::copyConsole,
                         onClearConsole = homeViewModel::clearConsole,
                         onReboot = settingsViewModel::reboot,
+                        onDismissCveSoftRebootPrompt = homeViewModel::dismissCveSoftRebootPrompt,
                     )
                 },
                 superUser = {

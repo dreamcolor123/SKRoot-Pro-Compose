@@ -4,13 +4,13 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 本仓库基于 [SKRoot-linuxKernelRoot](https://github.com/abcz316/SKRoot-linuxKernelRoot) 中的 Pro `PermissionManager` 工程整理，重点重做管理器的 UI、状态流和导航层，采用 Material 3 / Compose 实现 KSU 风格的管理界面。
 
-> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID、权限和 ARM64 Native 构建结构。源码中的上游实现与资源归属原项目作者。
+> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID 和权限。4.5.6 使用上游 APK 中经过哈希校验的 ARM64 Native 文件；相关实现与资源归属原项目作者。
 
 ## 当前版本
 
-- 上游核心版本：`4.5.4`
-- 当前应用版本：`4.5.4.13`
-- UI 修订号：`13`
+- 上游核心版本：`4.5.6`
+- 当前应用版本：`4.5.6.1`
+- UI 修订号：`1`
 - 最新公开版本：`v4.5.4.13`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
@@ -33,7 +33,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 版本与发布规则
 
-应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.4.13`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.6.1`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
 
 新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
 
@@ -95,7 +95,7 @@ app/build/outputs/apk/debug/app-debug.apk
 正式版构建会直接生成：
 
 ```text
-app/build/outputs/apk/release/v4.5.4.13-UI重构版-SKRoot Pro.apk
+app/build/outputs/apk/release/v4.5.6.1-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
@@ -108,7 +108,7 @@ app/build/outputs/apk/release/v4.5.4.13-UI重构版-SKRoot Pro.apk
 
 ### 设备内本地定制
 
-在应用的 **设置 → 管理器 → 本地定制管理器** 中，可直接以当前安装的单 APK 为模板，在设备内修改包名、管理器名称与五档密度启动图标。构建过程不连接 GitHub Actions 或其他服务；生成包会删除模板签名，使用设备内首次创建并持久复用的本地身份进行 APK v2/v3 签名，再校验 Manifest、应用名称、签名、图标和三项 ARM64 Native 库。
+在应用的 **设置 → 管理器 → 本地定制管理器** 中，可直接以当前安装的单 APK 为模板，在设备内修改包名、管理器名称与五档密度启动图标。构建过程不连接 GitHub Actions 或其他服务；生成包会删除模板签名，使用设备内首次创建并持久复用的本地身份进行 APK v2/v3 签名，再校验 Manifest、应用名称、签名、图标和四项 ARM64 Native 库。
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
@@ -131,7 +131,7 @@ b530392969c77616e84d50fe6d5b63efa4af2cfcf71ed8e7c13904a427a03688  v4.5.4.13-UI�
 
 ## 变更范围
 
-本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native C/C++ 函数体、JNI 声明、AIDL 接口、Magica 服务和现有业务协议保持原语义。
+本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native、JNI、AIDL、Magica 服务和现有业务协议跟随上游语义；4.5.6 的四项 ARM64 Native 文件直接同步自上游 APK并进行 SHA-256 构建校验。
 
 ## GitHub Actions 自助品牌构建
 
@@ -165,6 +165,17 @@ base64 -w 0 release.p12 > release.p12.base64
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
+
+### v4.5.6.1 上游核心适配
+
+- 同步上游 SKRoot Pro 4.5.6 Native SDK，新增 CVE-2026-43499 Ghostlock ARM64 组件。
+- 安装环境 JNI 切换为上游新的 `Boot`、`HotLoadReboot`、`HotLoadNoReboot` 字符串协议。
+- 支持从 `1.h` 识别 `METHOD=CVE-2026-43499`，执行上游 Ghostlock 引导后继续原热启动脚本。
+- CVE 热启动环境即时安装完成后提供可选软重启提示，并兼容上游新的热启动模式设置键。
+- 未配置独立 `update_json` 的已安装模块，可按模块 ID 使用模块市场数据检查更新。
+- 四项上游 Native 文件加入固定 SHA-256 构建校验，本地定制器与 GitHub Actions 同步验证新组件。
+- 已与上游 `master` 的 4.5.6 管理器源码、JNI 包装和静态 SDK 交叉核对；APK 继续打包官方发布包中的原始 Native 文件。
+- 上游更新说明：新增 CVE-2026-43499 对部分高通、天玑设备及 Linux 6.6/6.12 内核的支持，并修复细节问题。
 
 ### v4.5.4.13 环境安装兼容修复
 

@@ -12,6 +12,8 @@ import com.linux.permissionmanager.PermissionManagerApplication
 import com.linux.permissionmanager.data.*
 import com.linux.permissionmanager.helper.MagicaRootHelper
 import com.linux.permissionmanager.utils.FileUtils
+import com.linux.permissionmanager.utils.EnvironmentInstallMode
+import com.linux.permissionmanager.utils.HotloadSupport
 import com.linux.permissionmanager.utils.NetUtils
 import com.linux.permissionmanager.utils.ModuleWebUiShortcutRequest
 import com.linux.permissionmanager.utils.ShellUtils
@@ -171,7 +173,15 @@ class MainViewModel(private val app: PermissionManagerApplication) : ViewModel()
                     } else executeMagica(app, config.hotloadCommand)
                 } else {
                     withContext(Dispatchers.IO) {
-                        ShellUtils.executeScript(app, config.hotloadCommand)
+                        ShellUtils.executeScript(
+                            app,
+                            HotloadSupport.prepareScript(
+                                method = config.method,
+                                nativeLibraryDir = app.applicationInfo.nativeLibraryDir,
+                                payload = config.hotloadCommand,
+                            ),
+                            HotloadSupport.scriptTimeoutSeconds(config.method),
+                        )
                     }
                 }
             } ?: "ERROR: 热启动脚本执行超时（195 秒）"
@@ -225,6 +235,7 @@ data class HomeUiState(
     val console: String = "",
     val busyAction: String? = null,
     val error: String? = null,
+    val showCveSoftRebootPrompt: Boolean = false,
 )
 
 class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel() {
@@ -264,6 +275,7 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
                     version,
                     sdk,
                     settings.hotload,
+                    settings.hotloadMethod,
                 ) to
                     baseSystem.copy(oplusIntercepted = oplus)
             }.onSuccess { (environment, system) ->
@@ -280,7 +292,11 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
         }
     }
 
-    fun install(rootKey: String = key, hotload: Boolean = settings.hotload) {
+    fun install(
+        rootKey: String = key,
+        hotload: Boolean = settings.hotload,
+        hotloadMethod: String = settings.hotloadMethod,
+    ) {
         val requestKey = rootKey.trim()
         if (requestKey.isBlank()) {
             events.emit(UiEffect.ShowRootConfig)
@@ -292,16 +308,24 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
             pendingEnvironmentReboot = false
         }
         operation("安装环境") {
-            val modeName = if (hotload) "热启动" else "Boot"
+            val installMode = HotloadSupport.installMode(hotload, hotloadMethod)
+            val modeName = when (installMode) {
+                EnvironmentInstallMode.BOOT -> "Boot"
+                EnvironmentInstallMode.HOTLOAD_REBOOT -> "热启动（重启生效）"
+                EnvironmentInstallMode.HOTLOAD_NO_REBOOT -> "热启动（即时生效）"
+            }
             append("开始安装 SKRoot 环境（模式：$modeName，Key 长度：${requestKey.length}）…")
-            val result = native.installEnvironment(requestKey, hotload)
+            val result = native.installEnvironment(requestKey, installMode)
             append(result.ifBlank { "install_skroot_environment: 未返回结果" })
             val success = result.contains(Regex("(?i)(?:^|:\\s*)OK(?:\\b|，)"))
             if (looksLikeRootKeyFailure(result)) events.emit(UiEffect.ShowRootConfig)
             if (hotload && success) {
                 native.runCommand(requestKey, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
             }
-            if (success && !hotload) {
+            if (success && installMode == EnvironmentInstallMode.HOTLOAD_NO_REBOOT) {
+                mutableState.update { it.copy(showCveSoftRebootPrompt = true) }
+            }
+            if (success && installMode != EnvironmentInstallMode.HOTLOAD_NO_REBOOT) {
                 pendingEnvironmentReboot = true
                 mutableState.update { state ->
                     state.copy(
@@ -309,7 +333,8 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
                         error = null,
                         environment = state.environment.copy(
                             state = EnvironmentState.PENDING_REBOOT,
-                            hotload = false,
+                            hotload = hotload,
+                            hotloadMethod = hotloadMethod,
                         ),
                     )
                 }
@@ -318,6 +343,9 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
             }
         }
     }
+
+    fun dismissCveSoftRebootPrompt() =
+        mutableState.update { it.copy(showCveSoftRebootPrompt = false) }
 
     fun uninstall() = operation("卸载环境") {
         append(native.uninstallEnvironment(key))
@@ -505,6 +533,12 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                     )
                 }
                 modules.filter { it.updateJson.isNotBlank() }.forEach { checkUpdate(it, silent = true) }
+                val currentMarket = mutableState.value.market
+                if (currentMarket.isNotEmpty()) {
+                    modules.filter { it.updateJson.isBlank() }.forEach {
+                        checkUpdate(it, silent = true, marketFallback = currentMarket)
+                    }
+                }
             }
             .onFailure { error ->
                 if (error is CancellationException || requestId != installedRefreshRequestId || requestKey != key) return@onFailure
@@ -524,6 +558,9 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
                             item.copy(isInstalled = state.installed.any { installed -> sameModuleId(installed, item) })
                         },
                     )
+                }
+                mutableState.value.installed.filter { it.updateJson.isBlank() }.forEach {
+                    checkUpdate(it, silent = true, marketFallback = market)
                 }
             }
             .onFailure { mutableState.update { state -> state.copy(marketLoading = false, marketError = it.message ?: "模块市场加载失败") } }
@@ -628,8 +665,12 @@ class ModuleViewModel(private val app: PermissionManagerApplication) : ViewModel
         events.emit(UiEffect.ShowLog("模块详情", text))
     }
 
-    fun checkUpdate(module: InstalledModule, silent: Boolean = false) = viewModelScope.launch {
-        runCatching { repository.checkUpdate(module) }
+    fun checkUpdate(
+        module: InstalledModule,
+        silent: Boolean = false,
+        marketFallback: List<MarketModule>? = mutableState.value.market.takeIf { it.isNotEmpty() },
+    ) = viewModelScope.launch {
+        runCatching { repository.checkUpdate(module, marketFallback) }
             .onSuccess { update ->
                 mutableState.update { state ->
                     state.copy(installed = state.installed.map { if (it.id == module.id) it.copy(update = update) else it })

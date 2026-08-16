@@ -27,6 +27,7 @@ data class EnvironmentInfo(
     val installedVersion: String = "-",
     val sdkVersion: String = "-",
     val hotload: Boolean = false,
+    val hotloadMethod: String = "SHELL",
 )
 
 data class InstalledApp(

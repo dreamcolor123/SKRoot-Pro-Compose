@@ -105,6 +105,22 @@ class JsonParsersTest {
     }
 
     @Test
+    fun marketProvidesUpdateForModuleWithoutUpdateJson() {
+        val installed = JsonParsers.modules(
+            """[{"desc":{"name":"Demo","ver":"1.0","id32":"demo"},"state":"Running"}]""",
+        ).single()
+        val market = JsonParsers.market(
+            """{"module_list":[{"id32":"DEMO","ver":"2.0","download_url":"https://example.com/demo.zip"}]}""",
+        )
+
+        val update = JsonParsers.marketUpdate(installed, market)
+        assertTrue(update!!.hasNewVersion)
+        assertEquals("2.0", update.latestVersion)
+        assertEquals("https://example.com/demo.zip", update.downloadUrl)
+        assertNull(JsonParsers.marketUpdate(installed.copy(version = "2.0"), market))
+    }
+
+    @Test
     fun managerUpdateUsesRepositoryReleaseAndCanonicalVersion() {
         val update = JsonParsers.managerRelease(
             """{

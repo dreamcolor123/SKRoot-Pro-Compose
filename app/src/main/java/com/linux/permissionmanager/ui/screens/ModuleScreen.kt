@@ -442,7 +442,7 @@ private fun InstalledModuleCard(
                                 onClick = { menu = false; onCreateWebUiShortcut(module) },
                             )
                         }
-                        if (module.updateJson.isNotBlank()) DropdownMenuItem(text = { Text("检查更新") }, leadingIcon = { Icon(Icons.Outlined.Update, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onCheckUpdate(module) })
+                        DropdownMenuItem(text = { Text("检查更新") }, leadingIcon = { Icon(Icons.Outlined.Update, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onCheckUpdate(module) })
                         if (!module.update?.changelogUrl.isNullOrBlank()) DropdownMenuItem(text = { Text("更新日志") }, leadingIcon = { Icon(Icons.Outlined.Article, null, Modifier.size(ModuleMenuIconSize)) }, onClick = { menu = false; onChangelog(module) })
                         HorizontalDivider()
                         DropdownMenuItem(text = { Text("删除", color = MaterialTheme.colorScheme.error) }, leadingIcon = { Icon(Icons.Outlined.Delete, null, Modifier.size(ModuleMenuIconSize), tint = MaterialTheme.colorScheme.error) }, onClick = { menu = false; onDelete(module) })

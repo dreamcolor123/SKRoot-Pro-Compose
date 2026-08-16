@@ -8,6 +8,7 @@ import java.util.Set;
 
 public class AppSettings {
     public static final String KEY_IS_HOTLOAD_MODE = "is_hotload_mode";
+    public static final String KEY_IS_HOTLOAD_MODE_UPSTREAM = "isHotloadMode";
     public static final String HOTLOAD_SHELL_PATH = "/sdcard/1.h";
     public static final String KEY_APPEARANCE_PALETTE = "appearance_palette";
     public static final String KEY_APPEARANCE_BACKGROUND_URI = "appearance_background_uri";
@@ -36,6 +37,10 @@ public class AppSettings {
             e.printStackTrace();
         }
         return defaultValue;
+    }
+
+    public static boolean contains(String key) {
+        return preferences.contains(key);
     }
 
     public static void setString(String key, String value) {

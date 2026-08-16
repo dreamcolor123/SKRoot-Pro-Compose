@@ -10,6 +10,7 @@ import com.linux.permissionmanager.bridge.NativeBridge
 import com.linux.permissionmanager.utils.FileUtils
 import com.linux.permissionmanager.utils.NetUtils
 import com.linux.permissionmanager.customizer.LocalCustomizerRepository
+import com.linux.permissionmanager.utils.EnvironmentInstallMode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -40,8 +41,17 @@ class SettingsStore {
         get() = AppSettings.getString("rootKey", "")
         set(value) = AppSettings.setString("rootKey", value)
     var hotload: Boolean
-        get() = AppSettings.getBoolean(AppSettings.KEY_IS_HOTLOAD_MODE, false)
-        set(value) = AppSettings.setBoolean(AppSettings.KEY_IS_HOTLOAD_MODE, value)
+        get() = if (AppSettings.contains(AppSettings.KEY_IS_HOTLOAD_MODE_UPSTREAM)) {
+            AppSettings.getBoolean(AppSettings.KEY_IS_HOTLOAD_MODE_UPSTREAM, false)
+        } else {
+            AppSettings.getBoolean(AppSettings.KEY_IS_HOTLOAD_MODE, false)
+        }
+        set(value) {
+            // Keep the Compose 4.5.4 key while also matching the upstream 4.5.6
+            // manager key so upgrades in either direction retain the selected mode.
+            AppSettings.setBoolean(AppSettings.KEY_IS_HOTLOAD_MODE, value)
+            AppSettings.setBoolean(AppSettings.KEY_IS_HOTLOAD_MODE_UPSTREAM, value)
+        }
     var hotloadCommand: String
         get() = AppSettings.getString("hotloadCmd", "")
         set(value) = AppSettings.setString("hotloadCmd", value)
@@ -84,8 +94,8 @@ class SkrootRepository(
     suspend fun installedVersion(key: String) = native { NativeBridge.getInstalledSkrootEnvVersion(key) }
     suspend fun sdkVersion() = native { NativeBridge.getSdkVersion() }
     suspend fun systemStatusJson() = native { NativeBridge.getSystemStatusJson() }
-    suspend fun installEnvironment(key: String, hotload: Boolean) = mutateEnvironment {
-        NativeBridge.installSkrootEnv(key, hotload)
+    suspend fun installEnvironment(key: String, mode: EnvironmentInstallMode) = mutateEnvironment {
+        NativeBridge.installSkrootEnv(key, mode.nativeValue)
     }
     suspend fun uninstallEnvironment(key: String) = mutateEnvironment {
         NativeBridge.uninstallSkrootEnv(key)
@@ -273,6 +283,19 @@ object JsonParsers {
         return ModuleUpdate(version != current, version, url, json.optString("changelog", ""))
     }
 
+    fun marketUpdate(module: InstalledModule, market: List<MarketModule>): ModuleUpdate? {
+        val item = market.firstOrNull {
+            module.id.isNotBlank() && it.id.isNotBlank() && module.id.equals(it.id, ignoreCase = true)
+        } ?: return null
+        if (item.version.isBlank() || item.version == module.version) return null
+        return ModuleUpdate(
+            hasNewVersion = true,
+            latestVersion = item.version,
+            downloadUrl = item.downloadUrl,
+            changelogUrl = "",
+        )
+    }
+
     fun managerRelease(raw: String, current: String): AppUpdate? {
         if (raw.isBlank()) return null
         val json = JSONObject(raw)
@@ -395,8 +418,24 @@ class ModuleRepository(
     suspend fun openWebUi(key: String, module: InstalledModule) = native.openModuleWebUi(key, module.id)
     suspend fun openWebUi(key: String, moduleId: String) = native.openModuleWebUi(key, moduleId)
 
-    suspend fun checkUpdate(module: InstalledModule): ModuleUpdate? {
-        if (module.updateJson.isBlank()) return null
+    suspend fun checkUpdate(
+        module: InstalledModule,
+        marketFallback: List<MarketModule>? = null,
+    ): ModuleUpdate? {
+        if (module.updateJson.isBlank()) {
+            val update = JsonParsers.marketUpdate(module, marketFallback ?: market())
+            if (update != null) {
+                settings.putString(
+                    "module_update_${module.id}",
+                    JSONObject()
+                        .put("version", update.latestVersion)
+                        .put("zipUrl", update.downloadUrl)
+                        .put("changelog", update.changelogUrl)
+                        .toString(),
+                )
+            }
+            return update
+        }
         val raw = network.text(module.updateJson)
         settings.putString("module_update_${module.id}", raw)
         return JsonParsers.moduleUpdate(raw, module.version)

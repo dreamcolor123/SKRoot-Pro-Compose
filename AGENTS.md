@@ -37,7 +37,7 @@
 - 官方 APK 文件名固定为：
 
   ```text
-  v4.5.4.X-UI重构版-SKRoot Pro.apk
+  v<versionName>-UI重构版-SKRoot Pro.apk
   ```
 
   实际构建时使用当前版本，即 `v<versionName>-UI重构版-SKRoot Pro.apk`。
@@ -50,10 +50,11 @@
 - 同步上游时先区分核心/Native 更新与管理器 UI 源码更新。
 - Native 库、JNI、AIDL、JSON 字段及调用顺序保持上游语义。
 - 上游核心版本发生变化后按第 1 节更新核心版本并重置 UI 修订号。
-- 仅同步二进制 Native 库时，也应校验三项 ARM64 库均被打包：
+- 仅同步二进制 Native 库时，也应校验当前上游要求的 ARM64 库均被打包：
   - `libmagica.so`
   - `libpermissionmanager.so`
   - `libresetprop.so`
+  - `libcve2026_43499_ghostlock.so`
 - UI、主题、本地定制器和导航改动不得顺带改变 Root、授权、模块或 Native 行为。
 
 ## 5. 发布前验证
@@ -78,7 +79,7 @@
 - `aapt2 dump badging` 中包名、应用名称、`versionName` 和 `versionCode` 正确。
 - APK v2 签名有效，正式签名 SHA-256 保持为 `ec4d3bc1cc054ad2d52b671785c265e8bd66530f8ed6502179e423fdea8fe6dc`。
 - `zipalign -c -p 4` 通过。
-- 三项 ARM64 Native 库完整。
+- 当前上游要求的四项 ARM64 Native 库完整。
 - 本地定制器依赖的 17 项 launcher 资源完整。
 - 文件名严格等于 `v<versionName>-UI重构版-SKRoot Pro.apk`。
 - README 中的当前版本、下载链接和 SHA-256 已同步。

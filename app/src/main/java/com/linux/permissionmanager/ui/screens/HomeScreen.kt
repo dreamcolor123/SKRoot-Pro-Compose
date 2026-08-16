@@ -36,6 +36,7 @@ fun HomeScreen(
     onCopyConsole: () -> Unit,
     onClearConsole: () -> Unit,
     onReboot: (String?, Boolean) -> Unit,
+    onDismissCveSoftRebootPrompt: () -> Unit,
 ) {
     var commandDialog by remember { mutableStateOf(false) }
     var installDialog by remember { mutableStateOf(false) }
@@ -303,7 +304,7 @@ fun HomeScreen(
                         },
                     )
                     Text(
-                        "当前安装模式：${if (state.environment.hotload) "热启动" else "Boot"}",
+                        "当前安装模式：${installModeLabel(state.environment.hotload, state.environment.hotloadMethod)}",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -330,6 +331,29 @@ fun HomeScreen(
                 ) { Text("确认卸载") }
             },
             dismissButton = { TextButton(onClick = { uninstallDialog = false }) { Text("取消") } },
+        )
+    }
+    if (state.showCveSoftRebootPrompt) {
+        AlertDialog(
+            onDismissRequest = onDismissCveSoftRebootPrompt,
+            icon = { Icon(Icons.Outlined.CheckCircle, null) },
+            title = { Text("环境安装完成") },
+            text = {
+                Text(
+                    "当前 CVE 热启动环境已即时生效，模块也已激活。一般无需软重启；仅在使用改机型等特殊模块时再执行软重启。",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDismissCveSoftRebootPrompt()
+                        onReboot(null, true)
+                    },
+                ) { Text("软重启") }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissCveSoftRebootPrompt) { Text("不需要") }
+            },
         )
     }
     if (rebootDialog) {
@@ -379,3 +403,9 @@ private fun QuickAction(icon: androidx.compose.ui.graphics.vector.ImageVector, t
 // Android 8+ 的生产设备默认处于 Enforcing；沿用旧版页面语义，仅明确的 0 显示宽容模式。
 private fun selinuxText(value: Int) = if (value == 0) "宽容模式" else "严格模式"
 private fun seccompText(value: Int) = when (value) { 0 -> "未开启"; 1 -> "严格模式"; 2 -> "过滤模式"; else -> "未知" }
+
+private fun installModeLabel(hotload: Boolean, method: String): String = when {
+    !hotload -> "Boot"
+    method.equals("CVE-2026-43499", ignoreCase = true) -> "热启动 · CVE-2026-43499（即时生效）"
+    else -> "热启动（重启生效）"
+}

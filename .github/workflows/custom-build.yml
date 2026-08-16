@@ -143,6 +143,13 @@ jobs:
           VERSION_NAME=$(printf '%s\n' "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -1)
           printf '%s\n' "$VERSION_NAME" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' >/dev/null
           "$APKSIGNER" verify --verbose "$APK" | grep -F 'Verified using v2 scheme (APK Signature Scheme v2): true' >/dev/null
+          for LIBRARY in \
+            libmagica.so \
+            libpermissionmanager.so \
+            libresetprop.so \
+            libcve2026_43499_ghostlock.so; do
+            unzip -Z1 "$APK" | grep -Fx "lib/arm64-v8a/$LIBRARY" >/dev/null
+          done
           ICON_ENTRY_COUNT=$(unzip -Z1 "$APK" | grep -Ec 'res/mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)-v4/ic_launcher(_round|_foreground)?\.png|res/mipmap-anydpi-v26/ic_launcher(_round)?\.xml')
           test "$ICON_ENTRY_COUNT" -eq 17
           TAG="${RELEASE_TAG_INPUT:-custom-${GITHUB_RUN_NUMBER}}"

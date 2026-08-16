@@ -11,12 +11,22 @@ import java.util.concurrent.TimeUnit;
 
 public class ShellUtils {
 
+    private static final long DEFAULT_TIMEOUT_SECONDS = 70L;
+
     public static String executeScript(Context context, String scriptContent) {
+        return executeScript(context, scriptContent, DEFAULT_TIMEOUT_SECONDS);
+    }
+
+    public static String executeScript(Context context, String scriptContent, long timeoutSeconds) {
         File defaultFile = new File(context.getCacheDir(), "temp_script.sh");
-        return executeScript( scriptContent, defaultFile.getAbsolutePath());
+        return executeScript(scriptContent, defaultFile.getAbsolutePath(), timeoutSeconds);
     }
 
     public static String executeScript(String scriptContent, String scriptPath) {
+        return executeScript(scriptContent, scriptPath, DEFAULT_TIMEOUT_SECONDS);
+    }
+
+    public static String executeScript(String scriptContent, String scriptPath, long timeoutSeconds) {
         StringBuffer outputBuilder = new StringBuffer();
         Process process = null;
         File scriptFile = null;
@@ -24,6 +34,9 @@ public class ShellUtils {
         try {
             if (scriptPath == null || scriptPath.trim().isEmpty()) {
                 throw new IllegalArgumentException("scriptPath is null or empty");
+            }
+            if (timeoutSeconds <= 0L) {
+                throw new IllegalArgumentException("timeoutSeconds must be greater than zero");
             }
 
             scriptFile = new File(scriptPath);
@@ -66,11 +79,13 @@ public class ShellUtils {
             outputReader.setDaemon(true);
             outputReader.start();
 
-            boolean finished = process.waitFor(70, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
             if (finished) {
                 outputBuilder.append("\n[Exit Code: ").append(process.exitValue()).append("]");
             } else {
-                outputBuilder.append("\n[Execution Timeout: 70 seconds]");
+                outputBuilder.append("\n[Execution Timeout: ")
+                        .append(timeoutSeconds)
+                        .append(" seconds]");
                 process.destroy();
                 if (!process.waitFor(2, TimeUnit.SECONDS)) process.destroyForcibly();
                 try {
@@ -88,11 +103,9 @@ public class ShellUtils {
             if (process != null) {
                 process.destroy();
             }
-
-            if (scriptFile != null && scriptFile.exists()) {
-                boolean deleted = scriptFile.delete();
-                outputBuilder.append("\n[Delete Script] ").append(deleted);
-            }
+            // Upstream 4.5.6 deliberately keeps the private cache script: the
+            // Ghostlock path may re-enter the same file after the parent shell
+            // exits. The next hotload execution overwrites this cache entry.
         }
 
         return outputBuilder.toString();
