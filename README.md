@@ -11,7 +11,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 - 上游核心版本：`4.5.8`
 - 当前应用版本：`4.5.8.1`
 - UI 修订号：`1`
-- 最新公开版本：`v4.5.6.1`
+- 最新公开版本：`v4.5.8.1`
 - 默认 Application ID：`com.linux.permissionmanager`
 - `minSdk`：26
 - `targetSdk`：31
@@ -112,14 +112,14 @@ app/build/outputs/apk/release/v4.5.8.1-UI重构版-SKRoot Pro.apk
 
 同一安装保留应用数据时，本地身份会持续复用，因此相同定制包名可直接更新。若设备上已有同包名但签名不同的应用，界面会提示签名冲突；仍可仅导出 APK，安装前需更换包名或卸载冲突应用。
 
-最新公开 Release [v4.5.6.1](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.6.1) 提供签名正式版 APK：
+最新公开 Release [v4.5.8.1](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.8.1) 提供签名正式版 APK：
 
-- [`v4.5.6.1-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.6.1/v4.5.6.1-UI-SKRoot-Pro.apk)
+- [`v4.5.8.1-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.8.1/v4.5.8.1-UI%E9%87%8D%E6%9E%84%E7%89%88-SKRoot%20Pro.apk)
 
 SHA-256：
 
 ```text
-9d8075eee51e1f12389214874fde2e90b21eed369733405eec84c3bdfb6b10cf  v4.5.6.1-UI重构版-SKRoot Pro.apk
+bb34f820229c60afd3eccde6a9de58a29fb4a697c2e7b970bc908f72122e35c8  v4.5.8.1-UI重构版-SKRoot Pro.apk
 ```
 
 ## 上游项目与致谢
