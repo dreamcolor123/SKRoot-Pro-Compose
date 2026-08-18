@@ -13,13 +13,20 @@ class HotloadSupportTest {
             HotloadSupport.installMode(hotload = false, method = HotloadSupport.CVE_2026_43499),
         )
         assertEquals(
-            EnvironmentInstallMode.HOTLOAD_REBOOT,
+            EnvironmentInstallMode.HOTLOAD,
             HotloadSupport.installMode(hotload = true, method = "SHELL"),
         )
         assertEquals(
-            EnvironmentInstallMode.HOTLOAD_NO_REBOOT,
+            EnvironmentInstallMode.HOTLOAD,
             HotloadSupport.installMode(hotload = true, method = "cve-2026-43499"),
         )
+    }
+
+    @Test
+    fun exploitMethodUsesTheNewUpstreamThirdArgument() {
+        assertEquals("", HotloadSupport.exploitMethod("SHELL"))
+        assertEquals("MAGICA", HotloadSupport.exploitMethod("magica"))
+        assertEquals(HotloadSupport.CVE_2026_43499, HotloadSupport.exploitMethod(" cve-2026-43499 "))
     }
 
     @Test

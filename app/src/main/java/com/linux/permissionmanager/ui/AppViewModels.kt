@@ -309,23 +309,21 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
         }
         operation("安装环境") {
             val installMode = HotloadSupport.installMode(hotload, hotloadMethod)
-            val modeName = when (installMode) {
-                EnvironmentInstallMode.BOOT -> "Boot"
-                EnvironmentInstallMode.HOTLOAD_REBOOT -> "热启动（重启生效）"
-                EnvironmentInstallMode.HOTLOAD_NO_REBOOT -> "热启动（即时生效）"
-            }
-            append("开始安装 SKRoot 环境（模式：$modeName，Key 长度：${requestKey.length}）…")
-            val result = native.installEnvironment(requestKey, installMode)
+            val exploitMethod = HotloadSupport.exploitMethod(hotloadMethod)
+            val modeName = if (installMode == EnvironmentInstallMode.BOOT) "Boot" else "HotLoad"
+            val strategyName = exploitMethod.ifBlank { "默认" }
+            append("开始安装 SKRoot 环境（模式：$modeName，策略：$strategyName，Key 长度：${requestKey.length}）…")
+            val result = native.installEnvironment(requestKey, installMode, exploitMethod)
             append(result.ifBlank { "install_skroot_environment: 未返回结果" })
             val success = result.contains(Regex("(?i)(?:^|:\\s*)OK(?:\\b|，)"))
             if (looksLikeRootKeyFailure(result)) events.emit(UiEffect.ShowRootConfig)
             if (hotload && success) {
                 native.runCommand(requestKey, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
             }
-            if (success && installMode == EnvironmentInstallMode.HOTLOAD_NO_REBOOT) {
+            if (success && hotload && HotloadSupport.isCve2026Method(hotloadMethod)) {
                 mutableState.update { it.copy(showCveSoftRebootPrompt = true) }
             }
-            if (success && installMode != EnvironmentInstallMode.HOTLOAD_NO_REBOOT) {
+            if (success && !hotload) {
                 pendingEnvironmentReboot = true
                 mutableState.update { state ->
                     state.copy(

@@ -8,7 +8,7 @@ def requestedApplicationId = project.findProperty('PUBLISH_APPLICATION_ID')?.toS
 def requestedAppName = project.findProperty('PUBLISH_APP_NAME')?.toString()?.trim()
 def effectiveApplicationId = requestedApplicationId ?: 'com.linux.permissionmanager'
 def effectiveAppName = requestedAppName ?: 'SKRoot(Pro)'
-def skrootCoreVersion = project.findProperty('SKROOT_CORE_VERSION')?.toString()?.trim() ?: '4.5.6'
+def skrootCoreVersion = project.findProperty('SKROOT_CORE_VERSION')?.toString()?.trim() ?: '4.5.8'
 def skrootUiRevisionText = project.findProperty('SKROOT_UI_REVISION')?.toString()?.trim() ?: '1'
 def coreVersionParts = skrootCoreVersion.tokenize('.')
 if (coreVersionParts.size() != 3 || !coreVersionParts.every { it ==~ /\d+/ }) {
@@ -171,7 +171,7 @@ dependencies {
 
 def upstreamNativeBinaries = [
         'libmagica.so'                 : 'eaea054804230df9f43728e90479cd0523ae4806951e8949fc9e6d47435ed745',
-        'libpermissionmanager.so'       : 'b230501147cdaafab70409ee50e42054f20ee02eec1fe11787e073fc15b77d77',
+        'libpermissionmanager.so'       : '32724ef77fd4dedb0cf7511437e0cdb29989087284036d2967e6802be88d8d47',
         'libresetprop.so'               : '70558e6d6199fa5a961b7bafeb8f96d8157cc63810db8df2a3cded1881763697',
         'libcve2026_43499_ghostlock.so' : 'fce430cd674100e3c3dbf78831bc0b61c84821adf8b673843e1a80b3f1903de1',
 ]

@@ -4,12 +4,12 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 本仓库基于 [SKRoot-linuxKernelRoot](https://github.com/abcz316/SKRoot-linuxKernelRoot) 中的 Pro `PermissionManager` 工程整理，重点重做管理器的 UI、状态流和导航层，采用 Material 3 / Compose 实现 KSU 风格的管理界面。
 
-> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID 和权限。4.5.6 使用上游 APK 中经过哈希校验的 ARM64 Native 文件；相关实现与资源归属原项目作者。
+> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID 和权限。4.5.8 使用上游 APK 中经过哈希校验的 ARM64 Native 文件；相关实现与资源归属原项目作者。
 
 ## 当前版本
 
-- 上游核心版本：`4.5.6`
-- 当前应用版本：`4.5.6.1`
+- 上游核心版本：`4.5.8`
+- 当前应用版本：`4.5.8.1`
 - UI 修订号：`1`
 - 最新公开版本：`v4.5.6.1`
 - 默认 Application ID：`com.linux.permissionmanager`
@@ -33,7 +33,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 版本与发布规则
 
-应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.6.1`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.5.8.1`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
 
 新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
 
@@ -95,7 +95,7 @@ app/build/outputs/apk/debug/app-debug.apk
 正式版构建会直接生成：
 
 ```text
-app/build/outputs/apk/release/v4.5.6.1-UI重构版-SKRoot Pro.apk
+app/build/outputs/apk/release/v4.5.8.1-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
@@ -131,7 +131,7 @@ SHA-256：
 
 ## 变更范围
 
-本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native、JNI、AIDL、Magica 服务和现有业务协议跟随上游语义；4.5.6 的四项 ARM64 Native 文件直接同步自上游 APK并进行 SHA-256 构建校验。
+本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native、JNI、AIDL、Magica 服务和现有业务协议跟随上游语义；4.5.8 的四项 ARM64 Native 文件直接同步自上游 APK并进行 SHA-256 构建校验。
 
 ## GitHub Actions 自助品牌构建
 
@@ -166,10 +166,18 @@ base64 -w 0 release.p12 > release.p12.base64
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
 
+### v4.5.8.1 上游核心适配
+
+- 同步上游 SKRoot Pro 4.5.8 Native SDK 与更新后的 `libpermissionmanager.so`。
+- 安装环境 JNI 适配新的三参数协议：`Boot/HotLoad` 模式与 `MAGICA/CVE-2026-43499` 漏洞策略分离传递。
+- 保留 CVE 热启动引导、可选软重启、脚本生命周期修复和模块市场更新回退逻辑。
+- 四项上游 Native 文件继续执行固定 SHA-256 构建校验。
+- 上游 4.5.8 更新说明：延续 CVE-2026-43499 支持并修复细节问题。
+
 ### v4.5.6.1 上游核心适配
 
 - 同步上游 SKRoot Pro 4.5.6 Native SDK，新增 CVE-2026-43499 Ghostlock ARM64 组件。
-- 安装环境 JNI 切换为上游新的 `Boot`、`HotLoadReboot`、`HotLoadNoReboot` 字符串协议。
+- 安装环境 JNI 适配上游的 `Boot`、`HotLoad` 模式与独立漏洞策略参数。
 - 支持从 `1.h` 识别 `METHOD=CVE-2026-43499`，执行上游 Ghostlock 引导后继续原热启动脚本。
 - CVE 热启动环境即时安装完成后提供可选软重启提示，并兼容上游新的热启动模式设置键。
 - 未配置独立 `update_json` 的已安装模块，可按模块 ID 使用模块市场数据检查更新。

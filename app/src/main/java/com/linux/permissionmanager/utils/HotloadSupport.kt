@@ -2,8 +2,7 @@ package com.linux.permissionmanager.utils
 
 enum class EnvironmentInstallMode(val nativeValue: String) {
     BOOT("Boot"),
-    HOTLOAD_REBOOT("HotLoadReboot"),
-    HOTLOAD_NO_REBOOT("HotLoadNoReboot"),
+    HOTLOAD("HotLoad"),
 }
 
 object HotloadSupport {
@@ -15,10 +14,16 @@ object HotloadSupport {
     fun isCve2026Method(method: String): Boolean =
         method.trim().equals(CVE_2026_43499, ignoreCase = true)
 
-    fun installMode(hotload: Boolean, method: String): EnvironmentInstallMode = when {
-        !hotload -> EnvironmentInstallMode.BOOT
-        isCve2026Method(method) -> EnvironmentInstallMode.HOTLOAD_NO_REBOOT
-        else -> EnvironmentInstallMode.HOTLOAD_REBOOT
+    fun installMode(hotload: Boolean): EnvironmentInstallMode =
+        if (hotload) EnvironmentInstallMode.HOTLOAD else EnvironmentInstallMode.BOOT
+
+    fun installMode(hotload: Boolean, @Suppress("UNUSED_PARAMETER") method: String): EnvironmentInstallMode =
+        installMode(hotload)
+
+    fun exploitMethod(method: String): String = when {
+        method.trim().equals("MAGICA", ignoreCase = true) -> "MAGICA"
+        isCve2026Method(method) -> CVE_2026_43499
+        else -> ""
     }
 
     fun scriptTimeoutSeconds(method: String): Long =

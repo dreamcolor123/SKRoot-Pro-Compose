@@ -94,8 +94,12 @@ class SkrootRepository(
     suspend fun installedVersion(key: String) = native { NativeBridge.getInstalledSkrootEnvVersion(key) }
     suspend fun sdkVersion() = native { NativeBridge.getSdkVersion() }
     suspend fun systemStatusJson() = native { NativeBridge.getSystemStatusJson() }
-    suspend fun installEnvironment(key: String, mode: EnvironmentInstallMode) = mutateEnvironment {
-        NativeBridge.installSkrootEnv(key, mode.nativeValue)
+    suspend fun installEnvironment(
+        key: String,
+        mode: EnvironmentInstallMode,
+        exploitMethod: String,
+    ) = mutateEnvironment {
+        NativeBridge.installSkrootEnv(key, mode.nativeValue, exploitMethod)
     }
     suspend fun uninstallEnvironment(key: String) = mutateEnvironment {
         NativeBridge.uninstallSkrootEnv(key)
