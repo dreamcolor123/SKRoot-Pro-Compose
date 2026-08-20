@@ -114,7 +114,7 @@ app/build/outputs/apk/release/v4.5.9.1-UI重构版-SKRoot Pro.apk
 
 最新公开 Release [v4.5.9.1](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/tag/v4.5.9.1) 提供签名正式版 APK：
 
-- [`v4.5.9.1-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.9.1/v4.5.9.1-UI%E9%87%8D%E6%9E%84%E7%89%88-SKRoot%20Pro.apk)
+- [`v4.5.9.1-UI重构版-SKRoot Pro.apk` / `com.linux.compose`](https://github.com/dreamcolor123/SKRoot-Pro-Compose/releases/download/v4.5.9.1/v4.5.9.1-UI.-SKRoot.Pro.apk)
 
 SHA-256：
 
