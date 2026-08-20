@@ -320,7 +320,9 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
             if (hotload && success) {
                 native.runCommand(requestKey, "rm -f ${AppSettings.HOTLOAD_SHELL_PATH}")
             }
-            if (success && hotload && HotloadSupport.isCve2026Method(hotloadMethod)) {
+            val isCveHotloadSuccess =
+                success && hotload && HotloadSupport.isCve2026Method(hotloadMethod)
+            if (isCveHotloadSuccess) {
                 mutableState.update { it.copy(showCveSoftRebootPrompt = true) }
             }
             if (success && !hotload) {
@@ -336,14 +338,23 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
                         ),
                     )
                 }
-            } else {
+            } else if (!isCveHotloadSuccess) {
                 refresh()
             }
         }
     }
 
-    fun dismissCveSoftRebootPrompt() =
+    fun dismissCveSoftRebootPrompt(refreshStatus: Boolean = true) {
         mutableState.update { it.copy(showCveSoftRebootPrompt = false) }
+        if (refreshStatus) {
+            viewModelScope.launch {
+                // Match upstream 4.5.9: let the immediate CVE environment settle,
+                // then refresh both environment and system status together.
+                delay(2_000)
+                refresh()
+            }
+        }
+    }
 
     fun uninstall() = operation("卸载环境") {
         append(native.uninstallEnvironment(key))

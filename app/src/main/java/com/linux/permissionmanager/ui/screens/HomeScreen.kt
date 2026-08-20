@@ -36,7 +36,7 @@ fun HomeScreen(
     onCopyConsole: () -> Unit,
     onClearConsole: () -> Unit,
     onReboot: (String?, Boolean) -> Unit,
-    onDismissCveSoftRebootPrompt: () -> Unit,
+    onDismissCveSoftRebootPrompt: (refreshStatus: Boolean) -> Unit,
 ) {
     var commandDialog by remember { mutableStateOf(false) }
     var installDialog by remember { mutableStateOf(false) }
@@ -335,7 +335,7 @@ fun HomeScreen(
     }
     if (state.showCveSoftRebootPrompt) {
         AlertDialog(
-            onDismissRequest = onDismissCveSoftRebootPrompt,
+            onDismissRequest = { onDismissCveSoftRebootPrompt(true) },
             icon = { Icon(Icons.Outlined.CheckCircle, null) },
             title = { Text("环境安装完成") },
             text = {
@@ -346,13 +346,13 @@ fun HomeScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        onDismissCveSoftRebootPrompt()
+                        onDismissCveSoftRebootPrompt(false)
                         onReboot(null, true)
                     },
                 ) { Text("软重启") }
             },
             dismissButton = {
-                TextButton(onClick = onDismissCveSoftRebootPrompt) { Text("不需要") }
+                TextButton(onClick = { onDismissCveSoftRebootPrompt(true) }) { Text("不需要") }
             },
         )
     }

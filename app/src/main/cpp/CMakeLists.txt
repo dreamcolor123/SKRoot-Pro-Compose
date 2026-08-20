@@ -34,7 +34,7 @@ target_link_libraries(magica
 		${log-lib}
 		)
 
-# The upstream 4.5.8 source and matching kernel_module_kit archive are available
+# The upstream 4.5.9 source and matching kernel_module_kit archive are available
 # for reference. The Compose build intentionally packages the four exact
 # libraries from the official upstream APK via src/main/jniLibs, with pinned
 # SHA-256 verification, so its Native behavior stays byte-for-byte identical.
