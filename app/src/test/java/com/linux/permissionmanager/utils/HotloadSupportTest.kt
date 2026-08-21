@@ -53,6 +53,8 @@ class HotloadSupportTest {
 
         val executable = "/data/app/example/lib/arm64/${HotloadSupport.GHOSTLOCK_LIBRARY}"
         assertTrue(script.startsWith("#!/system/bin/sh\n"))
+        assertFalse(script.contains("[DEBUG] SCRIPT_PATH"))
+        assertFalse(script.contains("[DEBUG] size="))
         assertTrue(script.contains("'$executable' \"\$SCRIPT_PATH\" \"\$SCRIPT_PATH\""))
         assertTrue(script.indexOf(executable) < script.indexOf(payload))
         assertTrue(script.endsWith(payload))

@@ -4,12 +4,12 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 本仓库基于 [SKRoot-linuxKernelRoot](https://github.com/abcz316/SKRoot-linuxKernelRoot) 中的 Pro `PermissionManager` 工程整理，重点重做管理器的 UI、状态流和导航层，采用 Material 3 / Compose 实现 KSU 风格的管理界面。
 
-> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID 和权限。4.6.0 使用上游 APK 中经过哈希校验的 ARM64 Native 文件；相关实现与资源归属原项目作者。
+> 本项目保留原 SKRoot Pro 的 Native/JNI、AIDL、Magica 服务、JSON 协议、应用 ID 和权限。4.6.1 使用上游 APK 中经过哈希校验的 ARM64 Native 文件；相关实现与资源归属原项目作者。
 
 ## 当前版本
 
-- 上游核心版本：`4.6.0`
-- 当前应用版本：`4.6.0.1`
+- 上游核心版本：`4.6.1`
+- 当前应用版本：`4.6.1.1`
 - UI 修订号：`1`
 - 最新公开版本：`v4.6.0.1`
 - 默认 Application ID：`com.linux.permissionmanager`
@@ -33,7 +33,7 @@ Kotlin + Jetpack Compose UI 重构版的 SKRoot Pro 权限管理器源码。
 
 ## 版本与发布规则
 
-应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.6.0.1`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
+应用版本使用 `<上游核心版本>.<UI 修订号>`，当前为 `4.6.1.1`。上游核心更新时同步前三段并将 UI 修订号重置为 `1`；本项目每次发布时递增最后一段。
 
 新 Release 统一使用 Tag `v<应用版本>`，官方 APK 统一命名为：
 
@@ -95,7 +95,7 @@ app/build/outputs/apk/debug/app-debug.apk
 正式版构建会直接生成：
 
 ```text
-app/build/outputs/apk/release/v4.6.0.1-UI重构版-SKRoot Pro.apk
+app/build/outputs/apk/release/v4.6.1.1-UI重构版-SKRoot Pro.apk
 ```
 
 项目只配置 `arm64-v8a` Native ABI。安装和运行前，请确认设备、Root Key 与 SKRoot 环境配置符合上游项目要求。
@@ -131,7 +131,7 @@ SHA-256：
 
 ## 变更范围
 
-本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native、JNI、AIDL、Magica 服务和现有业务协议跟随上游语义；4.6.0 的四项 ARM64 Native 文件直接同步自上游 APK并进行 SHA-256 构建校验。
+本版本主要包含 UI、状态管理、导航、主题和构建迁移。Native、JNI、AIDL、Magica 服务和现有业务协议跟随上游语义；4.6.1 的四项 ARM64 Native 文件直接同步自上游 APK并进行 SHA-256 构建校验。
 
 ## GitHub Actions 自助品牌构建
 
@@ -165,6 +165,16 @@ base64 -w 0 release.p12 > release.p12.base64
 `application_id` 必须符合 Android 规则：每段以小写字母开头，只包含小写字母、数字和下划线，并以点分隔，例如 `com.example.custom`。`com.linux.**compose` 中的星号不是合法字符，请在表单中填写规范化后的 `com.linux.compose`。应用名称支持 1–80 个可打印字符。
 
 工作流会执行资源图标生成、Release 签名、`aapt` 包名/名称/版本校验、APK v2 签名校验，并在摘要中显示 APK 路径和 SHA-256。图标未填写时沿用仓库默认图标。构建文件统一命名为 `v<应用版本>-UI重构版-<应用名称>.apk`，不再用自定义 Release Tag 充当 APK 版本号。
+
+### v4.6.1.1 上游核心适配
+
+- 同步上游 `master` 的 SKRoot Pro 4.6.1 官方 APK 中更新后的 `libpermissionmanager.so` 与 `libcve2026_43499_ghostlock.so`。
+- 同步 4.6.1 对应的 `kernel_module_kit_static.a`，供仓库内测试模块编译使用。
+- 保持三参数环境安装 JNI 协议以及现有 Boot / HotLoad 与漏洞策略传参不变。
+- 更新 Ghostlock Native 组件：自动按 CPU 频率选择核心配对，并保留显式核心环境变量覆盖。
+- 移除 Ghostlock 引导脚本中多余的脚本路径与大小调试输出，保留 Root 重入前的参数诊断。
+- 保留 CVE 即时环境安装完成后的延迟状态刷新，避免读取尚未稳定的系统状态。
+- 上游 4.6.1 更新说明：修复 CVE-2026-43499 漏洞痕迹与断网问题、部分天玑设备应用闪退问题及细节 Bug。
 
 ### v4.6.0.1 上游核心适配
 

@@ -348,7 +348,7 @@ class HomeViewModel(private val app: PermissionManagerApplication) : ViewModel()
         mutableState.update { it.copy(showCveSoftRebootPrompt = false) }
         if (refreshStatus) {
             viewModelScope.launch {
-                // Match upstream 4.6.0: let the immediate CVE environment settle,
+                // Match upstream 4.6.1: let the immediate CVE environment settle,
                 // then refresh both environment and system status together.
                 delay(2_000)
                 refresh()

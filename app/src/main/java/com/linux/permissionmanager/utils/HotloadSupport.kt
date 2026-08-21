@@ -35,8 +35,6 @@ object HotloadSupport {
         return buildString {
             appendLine("#!/system/bin/sh")
             appendLine("SCRIPT_PATH=\$(realpath \"\$0\")")
-            appendLine("echo \"[DEBUG] SCRIPT_PATH=[\$SCRIPT_PATH]\"")
-            appendLine("echo \"[DEBUG] size=\$(wc -c < \"\$SCRIPT_PATH\")\"")
             appendLine("if [ \"\$(id -u)\" -ne 0 ]; then")
             appendLine("    echo \"[+] Currently not in root privileges, requesting root authorization to rerun the script...\"")
             appendLine("    echo \"[DEBUG] argv1 pre-check: \$(stat -c '%s' \"\$SCRIPT_PATH\" 2>&1)\"")
